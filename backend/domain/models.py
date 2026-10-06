@@ -190,6 +190,7 @@ class CallState:
     derivation_status: Literal["PENDING", "COMPLETE", "FAILED"]
     transcript: dict[str, TranscriptSegment]
     processing: dict[str, SegmentProcessingState]
+    transcript_event_versions: dict[str, int]
     sentiment: SentimentState
     complaint: ComplaintState
     complaint_signal: ComplaintSignal

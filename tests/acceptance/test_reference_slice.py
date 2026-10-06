@@ -186,6 +186,23 @@ async def test_resolution_coverage_does_not_clear_newer_complaint_evidence(platf
 
 
 @pytest.mark.asyncio
+async def test_resolution_ignores_pre_resolution_complaint_in_later_dialogue(platform):
+    auth, call_id, _ = await _call_with_fee_complaint(platform)
+    await platform.resolve_complaint(auth, call_id)
+    after_resolution = await platform.ingest_segment(
+        auth,
+        call_id,
+        segment_id="agent-resolution-confirmation",
+        revision=1,
+        is_final=True,
+        speaker="AGENT",
+        text="The billing issue is resolved, and I can answer any other question you have.",
+    )
+    assert after_resolution["complaint"]["status"] == "RESOLVED"
+    assert after_resolution["complaint_signal"]["active"] is False
+
+
+@pytest.mark.asyncio
 async def test_post_call_revised_transcript_creates_new_current_lineage(platform):
     auth, call_id, _ = await _call_with_fee_complaint(platform)
     await platform.end_call(auth, call_id)

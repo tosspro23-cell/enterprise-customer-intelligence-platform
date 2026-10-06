@@ -19,9 +19,9 @@ pip install -e '.[dev]'
 uvicorn backend.app:app --reload --host 127.0.0.1 --port 8765
 ```
 
-Open <http://127.0.0.1:8765>. The Workbench opens as a business-facing agent desktop: choose one of three typical call Scripts in the left rail, advance transcript events one at a time, and watch the live customer state, metrics, commercial gate, and grounded assistance update on the right. Use “跑完整通话” for a fast walkthrough, or “下一条事件” to show how the customer conversation changes what the agent sees. Switch to “Supervisor 历史分析” to enumerate completed interactions across authorized customers and inspect service outcomes, model assistance, evidence references, and post-call traces. API documentation is available at `/docs`.
+Open <http://127.0.0.1:8765>. The Workbench opens as a business-facing agent desktop: choose one of three typical multi-turn call Scripts in the left rail, advance the customer and agent transcript one turn at a time, and watch the live customer state, metrics, commercial gate, and grounded assistance update on the right. Use “跑完整对话（2.4s/轮）” to watch the whole conversation unfold at a human-readable pace, or “下一条事件” to inspect one turn or business event at a time. Switch to “Supervisor 历史分析” to enumerate completed interactions across authorized customers and inspect service outcomes, model assistance, evidence references, and post-call traces. API documentation is available at `/docs`.
 
-If `frontend/index.html` is opened directly as a local file, the page can still reach a running local API through its explicit `http://127.0.0.1:8765` base URL. The HTTP URL above is the recommended entry point because it keeps the browser and API origin together.
+If `frontend/index.html` is opened directly as a local file, the page tries the current demo port `http://127.0.0.1:8766` first and then falls back to `http://127.0.0.1:8765`. The HTTP URL above is the recommended entry point because it keeps the browser and API origin together.
 
 Run the deterministic suite with:
 

@@ -1,10 +1,10 @@
 # Demo scenarios
 
-The Workbench is designed as a business-facing agent desktop. The left rail contains three synthetic call Scripts; the transcript is advanced event by event, while the right side shows the current customer state and the assistance available to the agent:
+The Workbench is designed as a business-facing agent desktop. The left rail contains three synthetic multi-turn call Scripts; each dialogue turn arrives as its own transcript event, while the right side shows the current customer state and the assistance available to the agent. “跑完整对话” pauses for about 2.4 seconds after each spoken turn and a shorter pause after system events, so the state change remains visible in the browser:
 
-- **费用投诉** (`C001`) — positive service feedback becomes a fee complaint, commercial assistance is suppressed, and a later authorized resolution allows a grounded recommendation.
-- **储蓄咨询** (`C001`) — a resolved service context moves into a product-information question, showing how approved facts and guidance become an optional next step.
-- **账单争议** (`C002`) — service and billing concerns are separated, the billing issue is handled first, and only then can a follow-up suggestion be evaluated.
+- **费用投诉** (`C001`) — 13 alternating customer/agent turns move from an unrecognized charge to a confirmed resolution, with commercial assistance suppressed until the issue is resolved.
+- **储蓄咨询** (`C001`) — 7 alternating turns clarify the customer’s savings goal, product questions, and approved facts before the optional recommendation is evaluated.
+- **账单争议** (`C002`) — 13 alternating turns separate the billing concern from the later savings question, so the billing issue is handled before a follow-up suggestion is evaluated.
 
 The primary walkthrough is the **费用投诉** Script:
 

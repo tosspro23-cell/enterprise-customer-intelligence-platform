@@ -11,14 +11,19 @@
   },
   "steps": [
     {"id":"start","label":"接入后续咨询","actor":"平台","description":"建立客户和当前通话的业务上下文。","action":"start"},
-    {"id":"service","label":"客户认可之前的帮助","actor":"客户","text":"Thanks for helping me with my account. The support was great.","description":"客服服务情绪为正面，系统保留这个 aspect，而不是把它当作商业许可。","action":"transcript","segment_id":"s-service"},
-    {"id":"savings","label":"客户询问自动储蓄","actor":"客户","text":"Now I want to understand how automatic savings rules work.","description":"对话主题转向 savings，平台准备查找批准的产品指导和结构化事实。","action":"transcript","segment_id":"s-savings"},
+    {"id":"customer-greeting","label":"客户说明咨询目标","actor":"客户","speaker":"CUSTOMER","text":"Hi, thanks for helping me with my account last time. I have a question about automatic savings.","description":"客户先说明咨询目标；服务正面反馈和 savings 主题同时进入 transcript。","action":"transcript","segment_id":"s-greeting"},
+    {"id":"agent-opens","label":"客服邀请客户说明","actor":"客服","speaker":"AGENT","text":"I’m happy to help. What would you like to understand about the savings rules?","description":"客服让客户先明确目标，辅助分析等待更完整的上下文。","action":"transcript","segment_id":"s-agent-open"},
+    {"id":"customer-goal","label":"客户说明资金目标","actor":"客户","speaker":"CUSTOMER","text":"I’m building an emergency fund, and I’d like something simple that I can adjust when my income changes.","description":"客户补充个人目标，平台保留 savings 主题并等待业务状态确认。","action":"transcript","segment_id":"s-goal"},
+    {"id":"agent-clarifies","label":"客服确认产品问题范围","actor":"客服","speaker":"AGENT","text":"So you want an automatic rule that is easy to change, rather than a fixed commitment. Is that right?","description":"客服复述客户目标，确保后续辅助与当前问题一致。","action":"transcript","segment_id":"s-agent-clarify"},
+    {"id":"customer-confirms","label":"客户确认需求","actor":"客户","speaker":"CUSTOMER","text":"Exactly. I want to know how the rule works, what it costs each month, and how I can stop it if I need to.","description":"客户明确询问产品事实和费用，平台可以准备检索批准的指导内容。","action":"transcript","segment_id":"s-confirm-goal"},
     {"id":"resolve","label":"确认当前服务问题已完成","actor":"客服业务流程","description":"只有业务流程事件可以改变投诉权威，客户的积极表达本身不会自动解决问题。","action":"resolve"},
+    {"id":"agent-checks-context","label":"客服确认进入产品说明","actor":"客服","speaker":"AGENT","text":"I’ve confirmed there isn’t an open service issue to resolve on this call. I’ll check the approved savings details for you now.","description":"当前服务状态已由业务流程确认，客服明确告诉客户即将查看产品事实。","action":"transcript","segment_id":"s-agent-context"},
+    {"id":"customer-asks-details","label":"客户提出具体问题","actor":"客户","speaker":"CUSTOMER","text":"Yes, please tell me the monthly cost and what I need to do to get started.","description":"客户的问题已经具体到产品费用和开始条件，触发后续辅助判断。","action":"transcript","segment_id":"s-details"},
     {"id":"recommend","label":"展示有依据的产品辅助","actor":"平台","description":"资格、产品事实、指导和解释校验通过后，客服才看到可选的后续方案。","action":"commercial"},
     {"id":"server-published","label":"建议送达客服桌面","actor":"交付层","description":"记录服务端完成发布。","action":"server-published"},
     {"id":"ui-ack","label":"客服桌面确认显示","actor":"客服工作台","description":"记录浏览器已经应用当前完整辅助快照。","action":"ack"},
     {"id":"end","label":"结束通话","actor":"客服平台","description":"结束实时会话并撤回实时辅助。","action":"end"},
-    {"id":"post-call","label":"生成服务总结","actor":"分析 worker","description":"保存客户诉求、情绪、主题和 evidence refs。","action":"post-call"},
+    {"id":"post-call","label":"生成通话总结","actor":"分析 worker","description":"保存客户诉求、情绪、主题和 evidence refs。","action":"post-call"},
     {"id":"idempotency","label":"确认重复执行安全","actor":"分析 worker","description":"再次执行同一 post-call job，不产生重复记录。","action":"post-call"}
   ]
 }

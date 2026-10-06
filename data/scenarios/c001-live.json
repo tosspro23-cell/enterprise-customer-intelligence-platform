@@ -10,86 +10,27 @@
     "segment": "PERSONAL"
   },
   "steps": [
-    {
-      "id": "start",
-      "label": "建立通话",
-      "actor": "平台",
-      "description": "绑定客户、通话和受信任的客服身份，初始化投诉权威状态。",
-      "action": "start"
-    },
-    {
-      "id": "service",
-      "label": "客户表达服务满意",
-      "actor": "客户",
-      "text": "The support team has been very helpful, thank you.",
-      "description": "模拟实时 transcript segment；服务方面情绪应为正面。",
-      "action": "transcript",
-      "segment_id": "s-service"
-    },
-    {
-      "id": "fee",
-      "label": "客户提出月费问题",
-      "actor": "客户",
-      "text": "But the monthly fee is terrible and feels unfair.",
-      "description": "同一通话中费用 aspect 变为负面，并产生 complaint signal。",
-      "action": "transcript",
-      "segment_id": "s-fees"
-    },
-    {
-      "id": "suppress",
-      "label": "实时商业门控",
-      "actor": "AI 平台",
-      "description": "propensity 可以很高，但 OPEN complaint 使商业建议进入 SUPPRESS。",
-      "action": "commercial"
-    },
-    {
-      "id": "resolve",
-      "label": "权威解决投诉",
-      "actor": "客服业务流程",
-      "description": "只有授权业务事件可以将 complaint authority 置为 RESOLVED。",
-      "action": "resolve"
-    },
-    {
-      "id": "recommend",
-      "label": "生成有效辅助建议",
-      "actor": "AI 平台",
-      "description": "eligibility、product facts、guidance 和 bounded explanation 均通过后才发布推荐。",
-      "action": "commercial"
-    },
-    {
-      "id": "server-published",
-      "label": "服务器提交结果",
-      "actor": "交付层",
-      "description": "记录 server publish；这还不等同于浏览器已经应用。",
-      "action": "server-published"
-    },
-    {
-      "id": "ui-ack",
-      "label": "浏览器确认显示",
-      "actor": "Workbench",
-      "description": "记录 UI acknowledgement，并保持 lifecycle 单调。",
-      "action": "ack"
-    },
-    {
-      "id": "end",
-      "label": "结束通话",
-      "actor": "客服平台",
-      "description": "结束通话并撤回仍在生成或已显示的实时商业建议。",
-      "action": "end"
-    },
-    {
-      "id": "post-call",
-      "label": "Post-call enrichment",
-      "actor": "分析 worker",
-      "description": "绑定不可变 transcript snapshot，保存 summary、themes、sentiment 和 evidence。",
-      "action": "post-call"
-    },
-    {
-      "id": "idempotency",
-      "label": "重试与幂等",
-      "actor": "分析 worker",
-      "description": "再次运行同一 job，不创建重复 interaction record。",
-      "action": "post-call"
-    }
+    {"id":"start","label":"建立通话","actor":"平台","description":"绑定客户、通话和受信任的客服身份，初始化投诉权威状态。","action":"start"},
+    {"id":"customer-opening","label":"客户说明来电原因","actor":"客户","speaker":"CUSTOMER","text":"Hi, I’m calling because I noticed a monthly charge on my account that I don’t recognize.","description":"客户先说明来电原因；平台开始从实时 transcript 建立费用主题。","action":"transcript","segment_id":"s-opening"},
+    {"id":"agent-acknowledges","label":"客服确认并澄清账单","actor":"客服","speaker":"AGENT","text":"I can look into that with you. Let me confirm the account and the date you saw the charge before we decide what to do next.","description":"客服先承接问题并澄清事实，不提前引入额外产品建议。","action":"transcript","segment_id":"s-agent-ack"},
+    {"id":"customer-details","label":"客户补充账单细节","actor":"客户","speaker":"CUSTOMER","text":"It appeared on my latest statement, and I’m worried I’m paying for something I never asked for.","description":"客户补充账单背景，费用主题持续，但投诉信号还在形成。","action":"transcript","segment_id":"s-details"},
+    {"id":"agent-reframes","label":"客服复述当前问题","actor":"客服","speaker":"AGENT","text":"I understand why that would be confusing. I’ll review the monthly charge first, and we can keep the rest of the conversation focused on your account.","description":"客服复述问题边界，让当前服务问题成为对话主线。","action":"transcript","segment_id":"s-agent-reframe"},
+    {"id":"customer-escalates","label":"客户表达不满","actor":"客户","speaker":"CUSTOMER","text":"The monthly fee feels unfair and expensive, and I need to know exactly what it covers.","description":"客户明确表达费用不满；费用情绪变为负面，投诉信号变为 active。","action":"transcript","segment_id":"s-fees"},
+    {"id":"agent-investigates","label":"客服说明核查动作","actor":"客服","speaker":"AGENT","text":"I’ve checked the account. The charge is linked to the savings service, and I’ll explain what it covers before we discuss any next step.","description":"客服给出核查进展，但没有绕过当前投诉直接做商业推荐。","action":"transcript","segment_id":"s-agent-investigates"},
+    {"id":"customer-sets-priority","label":"客户要求先解决费用","actor":"客户","speaker":"CUSTOMER","text":"I don’t want another offer right now; I just want this charge explained and fixed.","description":"客户明确当前优先级，平台应把商业建议置于问题处理之后。","action":"transcript","segment_id":"s-priority"},
+    {"id":"suppress","label":"实时商业门控","actor":"平台","description":"propensity 可以很高，但 OPEN complaint 使商业建议进入 SUPPRESS。","action":"commercial"},
+    {"id":"agent-sets-expectation","label":"客服承诺先处理问题","actor":"客服","speaker":"AGENT","text":"That makes sense. I’ll focus on resolving the charge first, and I won’t introduce another product while this issue is still open.","description":"客服根据实时辅助确认服务顺序，先解决问题再判断后续建议。","action":"transcript","segment_id":"s-agent-priority"},
+    {"id":"customer-agrees","label":"客户确认解决方向","actor":"客户","speaker":"CUSTOMER","text":"If the charge is removed and the explanation is clear, I’m happy to continue with you.","description":"客户确认可接受的解决条件，对话从投诉转向处理方案。","action":"transcript","segment_id":"s-agrees"},
+    {"id":"agent-offers-resolution","label":"客服提出费用处理","actor":"客服","speaker":"AGENT","text":"I can reverse the unexpected fee and record the explanation for this call. Would that address the issue for you?","description":"客服提出明确处理动作，等待客户确认后再改变投诉权威。","action":"transcript","segment_id":"s-agent-resolution"},
+    {"id":"customer-confirms","label":"客户确认问题解决","actor":"客户","speaker":"CUSTOMER","text":"Yes, that addresses it. I understand what happened now.","description":"客户确认解释和处理结果，下一步可以由业务流程正式记录解决。","action":"transcript","segment_id":"s-confirmed"},
+    {"id":"resolve","label":"权威解决投诉","actor":"客服业务流程","description":"只有授权业务事件可以将 complaint authority 置为 RESOLVED。","action":"resolve"},
+    {"id":"agent-closes-issue","label":"客服确认服务问题已结束","actor":"客服","speaker":"AGENT","text":"The billing issue is now marked resolved. If you’re comfortable, we can move on to any questions you still have.","description":"权威状态已经解决，客服向客户确认可以进入下一主题。","action":"transcript","segment_id":"s-agent-resolved"},
+    {"id":"customer-asks-savings","label":"客户转向储蓄咨询","actor":"客户","speaker":"CUSTOMER","text":"I am comfortable now. I was also curious whether there is a simple way to build savings automatically.","description":"客户在问题解决后主动提出 savings 话题，平台可以重新评估后续辅助。","action":"transcript","segment_id":"s-savings-question"},
+    {"id":"recommend","label":"生成有效辅助建议","actor":"平台","description":"eligibility、product facts、guidance 和 bounded explanation 均通过后才发布推荐。","action":"commercial"},
+    {"id":"server-published","label":"建议送达客服桌面","actor":"交付层","description":"记录 server publish；这还不等同于浏览器已经应用。","action":"server-published"},
+    {"id":"ui-ack","label":"客服桌面确认显示","actor":"客服工作台","description":"记录 UI acknowledgement，并保持 lifecycle 单调。","action":"ack"},
+    {"id":"end","label":"结束通话","actor":"客服平台","description":"结束通话并撤回仍在生成或已显示的实时商业建议。","action":"end"},
+    {"id":"post-call","label":"生成通话总结","actor":"分析 worker","description":"绑定不可变 transcript snapshot，保存 summary、themes、sentiment 和 evidence。","action":"post-call"},
+    {"id":"idempotency","label":"重试与幂等","actor":"分析 worker","description":"再次运行同一 job，不创建重复 interaction record。","action":"post-call"}
   ]
 }

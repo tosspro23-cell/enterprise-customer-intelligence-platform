@@ -134,6 +134,7 @@ class Platform:
             derived_transcript_version=0,
             derivation_status="COMPLETE",
             transcript={},
+            transcript_event_versions={},
             processing={},
             sentiment=SentimentState(),
             complaint=complaint,
@@ -205,6 +206,7 @@ class Platform:
                 state.transcript[segment_id] = segment
                 state.processing[segment_id] = SegmentProcessingState(segment_id, revision)
                 state.canonical_transcript_version += 1
+                state.transcript_event_versions[segment_id] = state.canonical_transcript_version
                 state.state_version += 1
                 state.derivation_status = "PENDING"
                 state.last_updated_at = self.clock.now()
@@ -297,15 +299,21 @@ class Platform:
             ):
                 if segment.segment_id not in evidence:
                     evidence.append(segment.segment_id)
-        active = bool(evidence)
         covered = state.complaint.resolved_through_transcript_version
-        if state.complaint.status == "RESOLVED" and covered is not None and snapshot.transcript_version <= covered:
-            active = False
-            evidence = []
+        if state.complaint.status == "RESOLVED" and covered is not None:
+            evidence = [
+                segment_id
+                for segment_id in evidence
+                if state.transcript_event_versions.get(segment_id, snapshot.transcript_version) > covered
+            ]
+        active = bool(evidence)
         return ComplaintSignal(
             active=active,
             evidence_segment_ids=tuple(evidence),
-            evidence_transcript_versions=tuple(snapshot.transcript_version for _ in evidence),
+            evidence_transcript_versions=tuple(
+                state.transcript_event_versions.get(segment_id, snapshot.transcript_version)
+                for segment_id in evidence
+            ),
             updated_at=self.clock.now(),
         )
 
