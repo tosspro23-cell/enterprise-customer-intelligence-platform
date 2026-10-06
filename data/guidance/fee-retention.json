@@ -1,0 +1,22 @@
+[
+  {
+    "guidance_id": "GUIDE-FEE-001",
+    "title": "Handling a monthly fee concern",
+    "topic": "fees",
+    "text": "Acknowledge the fee concern, clarify the customer's expected value, and offer to review available account options before discussing any additional product.",
+    "source": "Customer care playbook",
+    "version": "2026.10",
+    "effective_date": "2026-10-01",
+    "purpose": "COMPLAINT_HANDLING"
+  },
+  {
+    "guidance_id": "GUIDE-SAVINGS-001",
+    "title": "Savings Plus overview",
+    "topic": "savings",
+    "text": "Savings Plus includes fee alerts and automatic savings rules for eligible personal customers. The monthly fee is shown in the structured product facts returned by the product service.",
+    "source": "Product guidance library",
+    "version": "2026.10",
+    "effective_date": "2026-10-01",
+    "purpose": "PRODUCT_EXPLANATION"
+  }
+]

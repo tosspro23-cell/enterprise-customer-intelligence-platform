@@ -1,0 +1,18 @@
+[
+  {
+    "customer_id": "C001",
+    "name": "Sarah Chen",
+    "segment": "PERSONAL",
+    "language": "en",
+    "tenure_months": 28,
+    "preferred_contact": "phone"
+  },
+  {
+    "customer_id": "C002",
+    "name": "Alex Morgan",
+    "segment": "PERSONAL",
+    "language": "en",
+    "tenure_months": 9,
+    "preferred_contact": "phone"
+  }
+]

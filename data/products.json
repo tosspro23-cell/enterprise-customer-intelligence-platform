@@ -1,0 +1,10 @@
+[
+  {
+    "product_id": "SAVINGS_PLUS",
+    "name": "Savings Plus",
+    "monthly_fee": 4.99,
+    "currency": "EUR",
+    "benefits": ["fee alerts", "automatic savings rules"],
+    "eligible_segments": ["PERSONAL"]
+  }
+]

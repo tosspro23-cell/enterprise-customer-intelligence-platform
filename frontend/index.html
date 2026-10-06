@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Intelligence Workbench</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0d1117; --panel:#161d27; --line:#2b3949; --muted:#91a0b3; --accent:#73d6bd; --warn:#f6c85f; --bad:#ff8f8f; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background:linear-gradient(145deg,#0d1117,#121b26); color:#edf3f8; }
+    main { max-width:1240px; margin:0 auto; padding:32px 22px 48px; }
+    header { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:22px; }
+    h1 { margin:0; font-size:28px; letter-spacing:-.03em; } h2 { font-size:15px; margin:0 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
+    .subtitle { color:var(--muted); margin-top:7px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .panel { background:rgba(22,29,39,.88); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 12px 34px #0003; }
+    .wide { grid-column:1 / -1; }
+    .controls { display:flex; flex-wrap:wrap; gap:8px; }
+    button { border:1px solid #3c536a; background:#1b2b3b; color:#f4f8fb; border-radius:9px; padding:9px 12px; cursor:pointer; font-weight:650; }
+    button:hover { border-color:var(--accent); } button:disabled { opacity:.4; cursor:not-allowed; }
+    .primary { background:#1d4a49; border-color:#3d9e91; } .danger { border-color:#875454; background:#352329; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+    .metric { border:1px solid var(--line); padding:11px; border-radius:11px; } .metric small { display:block; color:var(--muted); } .metric strong { display:block; margin-top:5px; font-size:18px; }
+    .pill { display:inline-block; padding:4px 8px; border-radius:99px; background:#253448; font-size:12px; margin:2px 3px 2px 0; } .pill.good { background:#19483d; color:#a9f3d8; } .pill.warn { background:#58461c; color:#ffe59a; } .pill.bad { background:#542b31; color:#ffc1c1; }
+    pre { white-space:pre-wrap; word-break:break-word; color:#c9d6e4; font-size:12px; max-height:280px; overflow:auto; background:#0b1016; padding:12px; border-radius:10px; }
+    .transcript { display:flex; flex-direction:column; gap:8px; max-height:330px; overflow:auto; } .segment { padding:10px 12px; border-left:3px solid #45627d; background:#121a24; border-radius:6px; } .segment.customer { border-left-color:var(--accent); } .speaker { font-size:11px; color:var(--muted); text-transform:uppercase; }
+    .decision { border:1px solid #3b5467; border-radius:11px; padding:13px; margin-bottom:9px; } .decision.recommend { border-color:#48ad91; } .decision.suppress { border-color:#ad8d48; } .decision.unavailable { border-color:#a55f67; }
+    .decision p { margin:8px 0 0; line-height:1.48; } .evidence { color:var(--muted); font-size:12px; margin-top:8px; }
+    #status { min-height:22px; color:var(--accent); margin:10px 0 0; } .error { color:var(--bad) !important; }
+    @media(max-width:850px){ .grid{grid-template-columns:1fr;} .wide{grid-column:auto;} .metrics{grid-template-columns:repeat(2,1fr);} header{display:block;} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Customer Intelligence Workbench</h1><div class="subtitle">Evidence-oriented live assistance for a synthetic customer conversation</div></div>
+    <div id="status">Ready to start a local reference call.</div>
+  </header>
+  <section class="panel wide">
+    <h2>Scenario controls</h2>
+    <div class="controls">
+      <button class="primary" id="start">Start C001 call</button>
+      <button id="service">Add service segment</button>
+      <button id="fees">Add fee concern</button>
+      <button id="assist">Request assistance</button>
+      <button id="resolve">Resolve complaint</button>
+      <button id="publish">Mark server published</button>
+      <button id="ack">Acknowledge in UI</button>
+      <button id="end">End call</button>
+      <button id="post">Run post-call</button>
+      <button id="trace">Refresh traces</button>
+    </div>
+  </section>
+  <div class="grid" style="margin-top:16px">
+    <section class="panel">
+      <h2>Call state</h2>
+      <div class="metrics" id="metrics"></div>
+      <div id="customer" style="margin-top:14px"></div>
+      <div id="complaint" style="margin-top:12px"></div>
+    </section>
+    <section class="panel">
+      <h2>Live assistance</h2>
+      <div id="assistance"><span style="color:var(--muted)">No committed assistance yet.</span></div>
+    </section>
+    <section class="panel">
+      <h2>Transcript</h2>
+      <div class="transcript" id="transcript"></div>
+    </section>
+    <section class="panel">
+      <h2>Conversation signals</h2>
+      <pre id="signals">Start a call to inspect sentiment and themes.</pre>
+    </section>
+    <section class="panel wide">
+      <h2>Trace drawer</h2>
+      <pre id="traces">Use “Refresh traces” after running the scenario.</pre>
+    </section>
+    <section class="panel wide">
+      <h2>Post-call result</h2>
+      <pre id="post-result">The final interaction record will appear here after the call ends.</pre>
+    </section>
+  </div>
+</main>
+<script>
+  let callId = null, latestDecision = null, segmentCounter = 0;
+  const $ = (id) => document.getElementById(id);
+  function setStatus(text, error=false){ $('status').textContent=text; $('status').className=error?'error':''; }
+  async function api(path, options={}){
+    const res = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
+    const data = await res.json(); if(!res.ok) throw new Error(data.detail || 'Request failed'); return data;
+  }
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function render(view){
+    if(!view) return; const c=view.call;
+    $('metrics').innerHTML = [['Status',c.status],['State version',c.state_version],['Transcript version',c.canonical_transcript_version],['UI sequence',c.ui_seq]].map(([a,b])=>`<div class="metric"><small>${a}</small><strong>${esc(b)}</strong></div>`).join('');
+    $('customer').innerHTML = `<span class="pill good">${esc(view.customer?.name)}</span> <span class="pill">${esc(view.customer?.segment)}</span>`;
+    const complaint=view.complaint; const sig=view.complaint_signal;
+    $('complaint').innerHTML = `<span class="pill ${complaint.status==='RESOLVED'?'good':'warn'}">Authority: ${esc(complaint.status)}</span> <span class="pill ${sig.active?'bad':'good'}">Signal: ${sig.active?'ACTIVE':'clear'}</span>`;
+    $('transcript').innerHTML = view.transcript.length ? view.transcript.map(s=>`<div class="segment ${s.speaker==='CUSTOMER'?'customer':''}"><div class="speaker">${esc(s.speaker)} · rev ${s.revision}</div>${esc(s.text)}</div>`).join('') : '<span style="color:var(--muted)">No transcript segments yet.</span>';
+    const aspects=view.sentiment.aspects||{};
+    $('signals').textContent=JSON.stringify({overall:view.sentiment.overall_label, aspects, complaint_signal:view.complaint_signal, pending:view.pending_decision_ids}, null, 2);
+    const decisions=view.assistance.decisions||[];
+    $('assistance').innerHTML=decisions.length?decisions.map(d=>`<div class="decision ${d.business_outcome.toLowerCase()}"><span class="pill ${d.business_outcome==='RECOMMEND'?'good':d.business_outcome==='SUPPRESS'?'warn':'bad'}">${esc(d.business_outcome)}</span> <span class="pill">${esc(d.delivery_state)}</span>${d.product_id?` <span class="pill good">${esc(d.product_id)}</span>`:''}<p>${esc(d.generated_text)}</p><div class="evidence">evidence: ${esc((d.evidence_refs||[]).join(', ')||'explicit unavailable/fallback')} · expires ${esc(d.expires_at)}</div></div>`).join(''):'<span style="color:var(--muted)">No committed assistance yet.</span>';
+    latestDecision=decisions[decisions.length-1]||latestDecision;
+  }
+  async function refresh(){ if(!callId)return; try{render(await api(`/api/calls/${callId}`));}catch(e){setStatus(e.message,true);} }
+  async function run(fn){ try{ const data=await fn(); if(data.call) render(data); setStatus('Updated at '+new Date().toLocaleTimeString()); return data; }catch(e){setStatus(e.message,true);} }
+  $('start').onclick=()=>run(async()=>{const v=await api('/api/calls',{method:'POST',body:JSON.stringify({customer_id:'C001'})});callId=v.call.call_id;segmentCounter=0;return v;});
+  $('service').onclick=()=>run(()=>api(`/api/calls/${callId}/transcript`,{method:'POST',body:JSON.stringify({segment_id:'s-service',revision:1,is_final:true,speaker:'CUSTOMER',text:'The support team has been very helpful, thank you.'})}));
+  $('fees').onclick=()=>run(()=>api(`/api/calls/${callId}/transcript`,{method:'POST',body:JSON.stringify({segment_id:'s-fees',revision:1,is_final:true,speaker:'CUSTOMER',text:'But the monthly fee is terrible and feels unfair.'})}));
+  $('assist').onclick=()=>run(()=>api(`/api/calls/${callId}/decisions/commercial`,{method:'POST'}));
+  $('resolve').onclick=()=>run(()=>api(`/api/calls/${callId}/complaint/resolve`,{method:'POST'}));
+  $('publish').onclick=()=>run(()=>latestDecision?api(`/api/calls/${callId}/decisions/${latestDecision.decision_id}/server-published`,{method:'POST'}):Promise.reject(new Error('No decision')));
+  $('ack').onclick=()=>run(()=>latestDecision?api(`/api/calls/${callId}/decisions/${latestDecision.decision_id}/ack`,{method:'POST'}):Promise.reject(new Error('No decision')));
+  $('end').onclick=()=>run(()=>api(`/api/calls/${callId}/end`,{method:'POST'}));
+  $('post').onclick=()=>run(async()=>{const v=await api(`/api/calls/${callId}/post-call`,{method:'POST'});$('post-result').textContent=JSON.stringify(v,null,2);return await api(`/api/calls/${callId}`);});
+  $('trace').onclick=async()=>{try{$('traces').textContent=JSON.stringify(await api(`/api/calls/${callId}/traces`),null,2);}catch(e){setStatus(e.message,true);}};
+</script>
+</body>
+</html>
