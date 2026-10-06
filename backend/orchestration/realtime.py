@@ -145,6 +145,7 @@ class Platform:
                 language=customer.language,
                 tenure_months=customer.tenure_months,
             ),
+            commercial_context={},
             last_updated_at=now,
         )
         self.bindings[call_id] = binding
@@ -404,9 +405,35 @@ class Platform:
         propensity_error: str | None = None
         try:
             propensity = await self.propensity.score_customer(context.customer_id, "SAVINGS_PLUS", now)
+            self.traces.record(
+                call_id=binding.call_id,
+                correlation_id=auth.correlation_id,
+                state_version=based_state_version,
+                stage="propensity",
+                status="SUCCEEDED",
+                output_ref=f"SAVINGS_PLUS:{propensity.score:.2f}",
+                model_version=propensity.model_version,
+            )
         except PropensityUnavailable as exc:
             propensity_error = str(exc)
+            self.traces.record(
+                call_id=binding.call_id,
+                correlation_id=auth.correlation_id,
+                state_version=based_state_version,
+                stage="propensity",
+                status="UNAVAILABLE",
+                error_code="PROPENSITY_UNAVAILABLE",
+            )
         eligibility = self.eligibility.evaluate(self.customer_api.get(context.customer_id), now)
+        self.traces.record(
+            call_id=binding.call_id,
+            correlation_id=auth.correlation_id,
+            state_version=based_state_version,
+            stage="eligibility",
+            status="SUCCEEDED",
+            output_ref=eligibility.reason,
+            model_version=eligibility.version,
+        )
         product: ProductFacts | None = None
         blocking_complaint = complaint.status != "RESOLVED" or signal.active or complaint.expires_at <= now
         if not blocking_complaint and propensity is not None and eligibility.eligible_product_ids:
@@ -429,7 +456,37 @@ class Platform:
             topic = "savings"
             purpose = "PRODUCT_EXPLANATION"
 
+        blocking_reasons = []
+        if complaint.status != "RESOLVED":
+            blocking_reasons.append(f"complaint authority is {complaint.status}")
+        if signal.active:
+            blocking_reasons.append("conversation complaint signal is active")
+        if complaint.expires_at <= now:
+            blocking_reasons.append("complaint authority is expired")
+        if propensity_error:
+            blocking_reasons.append("propensity service is unavailable")
+        if not eligibility.eligible_product_ids:
+            blocking_reasons.append("no eligible product")
+        self.traces.record(
+            call_id=binding.call_id,
+            correlation_id=auth.correlation_id,
+            state_version=based_state_version,
+            stage="commercial_policy",
+            status="SUCCEEDED",
+            output_ref=outcome,
+        )
+
         guidance = self.guidance.search(topic, purpose=purpose, now=now)
+        self.traces.record(
+            call_id=binding.call_id,
+            correlation_id=auth.correlation_id,
+            state_version=based_state_version,
+            stage="guidance_retrieval",
+            status="SUCCEEDED" if guidance else "UNAVAILABLE",
+            output_ref=guidance.guidance_id if guidance else None,
+            model_version=guidance.version if guidance else None,
+            error_code=None if guidance else "GUIDANCE_UNAVAILABLE",
+        )
         evidence_refs = [guidance.guidance_id] if guidance else []
         if guidance is None and outcome == "RECOMMEND":
             outcome = "UNAVAILABLE"
@@ -453,8 +510,25 @@ class Platform:
         llm_error: str | None = None
         try:
             explanation = await self.llm.explain(request)
+            self.traces.record(
+                call_id=binding.call_id,
+                correlation_id=auth.correlation_id,
+                state_version=based_state_version,
+                stage="llm_explanation",
+                status="SUCCEEDED",
+                output_ref=outcome,
+                model_version=explanation.model_version,
+            )
         except LLMUnavailable as exc:
             llm_error = str(exc)
+            self.traces.record(
+                call_id=binding.call_id,
+                correlation_id=auth.correlation_id,
+                state_version=based_state_version,
+                stage="llm_explanation",
+                status="UNAVAILABLE",
+                error_code="LLM_UNAVAILABLE",
+            )
             if outcome == "SUPPRESS":
                 explanation = type("Fallback", (), {
                     "text": "Guidance is temporarily unavailable; acknowledge the concern and do not present an additional product.",
@@ -483,6 +557,51 @@ class Platform:
                     })()
 
         dependencies = self._dependencies(complaint, eligibility, propensity, product, guidance, outcome)
+        commercial_context = {
+            "captured_at": now.isoformat(),
+            "based_on_state_version": based_state_version,
+            "based_on_transcript_version": based_transcript_version,
+            "propensity": {
+                "product_id": propensity.product_id,
+                "score": propensity.score,
+                "model": propensity.model_name,
+                "version": propensity.model_version,
+                "expires_at": propensity.expires_at.isoformat(),
+            } if propensity else {
+                "product_id": "SAVINGS_PLUS",
+                "score": None,
+                "model": "cross-sell-propensity",
+                "version": None,
+                "expires_at": None,
+                "status": "UNAVAILABLE",
+            },
+            "eligibility": {
+                "eligible_product_ids": list(eligibility.eligible_product_ids),
+                "reason": eligibility.reason,
+                "version": eligibility.version,
+                "expires_at": eligibility.expires_at.isoformat(),
+            },
+            "product_facts": {
+                "product_id": product.product_id,
+                "name": product.name,
+                "monthly_fee": product.monthly_fee,
+                "currency": product.currency,
+                "benefits": list(product.benefits),
+            } if product else None,
+            "policy": {
+                "outcome": outcome,
+                "blocking_reasons": blocking_reasons,
+                "complaint_authority": complaint.status,
+                "complaint_signal_active": signal.active,
+            },
+            "guidance": {
+                "guidance_id": guidance.guidance_id,
+                "title": guidance.title,
+                "source": guidance.source,
+                "version": guidance.version,
+                "purpose": guidance.purpose,
+            } if guidance else None,
+        }
         async with self._lock_for(binding.call_id):
             state = self._state(binding.call_id)
             decision = state.decisions.get(decision_id)
@@ -511,6 +630,7 @@ class Platform:
                     input_ref=decision_id,
                 )
                 return self._view_unlocked(state)
+            state.commercial_context = commercial_context
             validation = self.validator.validate(
                 explanation,
                 outcome=outcome,
@@ -521,8 +641,25 @@ class Platform:
                 required_guidance_id=guidance.guidance_id if guidance and outcome in {"RECOMMEND", "SUPPRESS"} else None,
             )
             if not validation.valid:
+                self.traces.record(
+                    call_id=binding.call_id,
+                    correlation_id=auth.correlation_id,
+                    state_version=state.state_version,
+                    stage="explanation_validation",
+                    status="FAILED",
+                    input_ref=decision_id,
+                    error_code=validation.reason,
+                )
                 self._fail_decision(state, decision, validation.reason or "validation failed")
                 return self._view_unlocked(state)
+            self.traces.record(
+                call_id=binding.call_id,
+                correlation_id=auth.correlation_id,
+                state_version=state.state_version,
+                stage="explanation_validation",
+                status="SUCCEEDED",
+                input_ref=decision_id,
+            )
             decision.business_outcome = outcome
             decision.dependencies = dependencies
             decision.product_id = product.product_id if product and outcome == "RECOMMEND" else None
@@ -803,6 +940,7 @@ class Platform:
                 },
             },
             "themes": list(themes),
+            "commercial_context": state.commercial_context,
             "complaint": self._complaint_dict(state.complaint),
             "complaint_signal": {
                 "active": state.complaint_signal.active,

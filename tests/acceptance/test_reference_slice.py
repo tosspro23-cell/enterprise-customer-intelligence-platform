@@ -37,6 +37,8 @@ async def test_complete_demo_has_aspect_grounding_and_idempotent_post_call(platf
     assert decision["business_outcome"] == "SUPPRESS"
     assert decision["product_id"] is None
     assert "GUIDE-FEE-001" in decision["evidence_refs"]
+    assert suppressed["commercial_context"]["propensity"]["score"] == 0.91
+    assert suppressed["commercial_context"]["policy"]["blocking_reasons"]
 
     await platform.resolve_complaint(auth, call_id)
     recommended = await platform.request_commercial(auth, call_id)
@@ -44,6 +46,7 @@ async def test_complete_demo_has_aspect_grounding_and_idempotent_post_call(platf
     assert decision["business_outcome"] == "RECOMMEND"
     assert decision["structured_facts"]["monthly_fee"] == 4.99
     assert decision["structured_facts"]["propensity_score"] == 0.91
+    assert recommended["commercial_context"]["eligibility"]["eligible_product_ids"] == ["SAVINGS_PLUS"]
 
     await platform.end_call(auth, call_id)
     first = await platform.post_call(auth, call_id)

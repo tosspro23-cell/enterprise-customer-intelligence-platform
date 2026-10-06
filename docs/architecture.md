@@ -2,7 +2,7 @@
 
 The platform is a modular monolith with three execution paths sharing domain contracts:
 
-1. **Live assistance** accepts transcript revisions, recomputes derived conversation state from a canonical whole-transcript snapshot, evaluates commercial policy, and publishes complete assistance-view snapshots.
+1. **Live assistance** accepts transcript revisions, recomputes derived conversation state from a canonical whole-transcript snapshot, evaluates commercial policy, and publishes complete assistance-view snapshots. The Workbench presents this as a guided call journey with visible decision reasons and stage traces.
 2. **Post-call enrichment** binds work to an immutable transcript snapshot and persists one idempotent result selected by `(transcript_version, enrichment_version)`.
 3. **Supervisor history** enumerates authorized interaction records before summarizing them, so a similarity result cannot be mistaken for complete history.
 
@@ -15,6 +15,7 @@ The platform is a modular monolith with three execution paths sharing domain con
 - Business outcome (`RECOMMEND`, `SUPPRESS`, `UNAVAILABLE`, `NO_ELIGIBLE_OPTION`) is distinct from delivery lifecycle.
 - The browser receives a complete assistance snapshot. It adopts only the highest `ui_seq`, making inverse-order delivery safe.
 - Structured product facts and scores are rendered from controlled fields. Free text is validated for schema, citations, protected values, and policy boundaries; arbitrary semantic truth is not claimed.
+- Commercial context keeps prediction, eligibility, policy, product facts, and guidance separate. This allows the UI to explain that a high propensity score is not by itself permission to recommend.
 - Tombstones and final writes share the SQLite transaction boundary, preventing deletion/retry resurrection.
 
 ## Production mapping

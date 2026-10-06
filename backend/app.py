@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -41,6 +42,12 @@ platform.registry.register(
 )
 
 app = FastAPI(title="Customer Intelligence Platform", version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory=str(ROOT / "frontend")), name="static")
 
 
@@ -71,6 +78,13 @@ async def index():
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "mode": "local-reference"}
+
+
+@app.get("/api/demo/scenario")
+async def demo_scenario():
+    from backend.services.scenario import load_demo_scenario
+
+    return load_demo_scenario()
 
 
 @app.post("/api/calls")

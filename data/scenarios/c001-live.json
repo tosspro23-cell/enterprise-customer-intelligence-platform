@@ -1,0 +1,93 @@
+{
+  "scenario_id": "c001-fee-resolution",
+  "title": "从费用投诉到有证据的辅助建议",
+  "purpose": "用一通合成客户通话展示实时状态、商业门控、人工权威和 post-call 证据链。",
+  "customer": {
+    "customer_id": "C001",
+    "name": "Sarah Chen",
+    "segment": "PERSONAL"
+  },
+  "steps": [
+    {
+      "id": "start",
+      "label": "建立通话",
+      "actor": "平台",
+      "description": "绑定客户、通话和受信任的客服身份，初始化投诉权威状态。",
+      "action": "start"
+    },
+    {
+      "id": "service",
+      "label": "客户表达服务满意",
+      "actor": "客户",
+      "text": "The support team has been very helpful, thank you.",
+      "description": "模拟实时 transcript segment；服务方面情绪应为正面。",
+      "action": "transcript",
+      "segment_id": "s-service"
+    },
+    {
+      "id": "fee",
+      "label": "客户提出月费问题",
+      "actor": "客户",
+      "text": "But the monthly fee is terrible and feels unfair.",
+      "description": "同一通话中费用 aspect 变为负面，并产生 complaint signal。",
+      "action": "transcript",
+      "segment_id": "s-fees"
+    },
+    {
+      "id": "suppress",
+      "label": "实时商业门控",
+      "actor": "AI 平台",
+      "description": "propensity 可以很高，但 OPEN complaint 使商业建议进入 SUPPRESS。",
+      "action": "commercial"
+    },
+    {
+      "id": "resolve",
+      "label": "权威解决投诉",
+      "actor": "客服业务流程",
+      "description": "只有授权业务事件可以将 complaint authority 置为 RESOLVED。",
+      "action": "resolve"
+    },
+    {
+      "id": "recommend",
+      "label": "生成有效辅助建议",
+      "actor": "AI 平台",
+      "description": "eligibility、product facts、guidance 和 bounded explanation 均通过后才发布推荐。",
+      "action": "commercial"
+    },
+    {
+      "id": "server-published",
+      "label": "服务器提交结果",
+      "actor": "交付层",
+      "description": "记录 server publish；这还不等同于浏览器已经应用。",
+      "action": "server-published"
+    },
+    {
+      "id": "ui-ack",
+      "label": "浏览器确认显示",
+      "actor": "Workbench",
+      "description": "记录 UI acknowledgement，并保持 lifecycle 单调。",
+      "action": "ack"
+    },
+    {
+      "id": "end",
+      "label": "结束通话",
+      "actor": "客服平台",
+      "description": "结束通话并撤回仍在生成或已显示的实时商业建议。",
+      "action": "end"
+    },
+    {
+      "id": "post-call",
+      "label": "Post-call enrichment",
+      "actor": "分析 worker",
+      "description": "绑定不可变 transcript snapshot，保存 summary、themes、sentiment 和 evidence。",
+      "action": "post-call"
+    },
+    {
+      "id": "idempotency",
+      "label": "重试与幂等",
+      "actor": "分析 worker",
+      "description": "再次运行同一 job，不创建重复 interaction record。",
+      "action": "post-call"
+    }
+  ]
+}

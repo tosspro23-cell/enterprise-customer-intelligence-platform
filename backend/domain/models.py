@@ -194,6 +194,7 @@ class CallState:
     complaint: ComplaintState
     complaint_signal: ComplaintSignal
     customer_context: CustomerContext | None
+    commercial_context: dict = field(default_factory=dict)
     pending_decision_ids: set[str] = field(default_factory=set)
     published_decision_ids: set[str] = field(default_factory=set)
     decisions: dict[str, Decision] = field(default_factory=dict)
