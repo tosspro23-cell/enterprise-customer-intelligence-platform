@@ -1,6 +1,6 @@
 # Demo scenarios
 
-The Workbench is designed as a business-facing agent desktop. The left rail contains three synthetic multi-turn call scripts; each dialogue turn arrives as its own transcript event and appears in a chat-style timeline with the customer on the left and the agent on the right. The right side shows the current customer state and the assistance available to the agent. “Run full conversation” pauses for about 2.4 seconds after each spoken turn and a shorter pause after system events, so the state change remains visible in the browser:
+The Workbench is designed as a business-facing agent desktop. A compact selector chooses among the synthetic multi-turn call scripts; each dialogue turn arrives as its own transcript event and appears in a chat-style timeline with the customer on the left and the agent on the right. The left event timeline shows only processed events, while the next event remains in the control bar until it runs. The right side shows the current customer state and the assistance available to the agent. “Run full conversation” pauses for about 2.4 seconds after each spoken turn and a shorter pause after system events, so the state change remains visible in the browser:
 
 - **费用投诉** (`C001`) — 13 alternating customer/agent turns move from an unrecognized charge to a confirmed resolution, with commercial assistance suppressed until the issue is resolved.
 - **储蓄咨询** (`C001`) — 7 alternating turns clarify the customer’s savings goal, product questions, and approved facts before the optional recommendation is evaluated.
