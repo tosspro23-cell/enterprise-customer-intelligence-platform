@@ -770,6 +770,7 @@ class Platform:
         return " ".join(customer_text)[:500] or "No customer transcript was available."
 
     def _view_unlocked(self, state: CallState) -> dict:
+        themes = detect_themes(state.canonical_snapshot().segments)
         visible = [
             self._decision_dict(decision)
             for decision in state.decisions.values()
@@ -801,6 +802,7 @@ class Platform:
                     for name, aspect in state.sentiment.aspects.items()
                 },
             },
+            "themes": list(themes),
             "complaint": self._complaint_dict(state.complaint),
             "complaint_signal": {
                 "active": state.complaint_signal.active,

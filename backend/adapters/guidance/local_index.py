@@ -21,7 +21,8 @@ class GuidanceResult:
 
 class LocalGuidanceIndex:
     def __init__(self, path: str | Path | None = None) -> None:
-        self.path = Path(path or "data/guidance/fee-retention.json")
+        default_path = Path(__file__).resolve().parents[3] / "data" / "guidance" / "fee-retention.json"
+        self.path = Path(path or default_path)
         self._records = json.loads(self.path.read_text(encoding="utf-8"))
         self.fail = False
 
