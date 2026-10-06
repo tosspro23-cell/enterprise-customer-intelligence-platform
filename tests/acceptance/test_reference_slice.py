@@ -70,6 +70,22 @@ async def test_transcript_revision_conflict_and_obsolete_revision_are_safe(platf
 
 
 @pytest.mark.asyncio
+async def test_transcript_snapshot_preserves_ingestion_order(platform):
+    auth = platform.test_agent
+    view = await platform.start_call(auth, "C001")
+    call_id = view["call"]["call_id"]
+    await platform.ingest_segment(
+        auth, call_id, segment_id="turn-z", revision=1, is_final=True,
+        speaker="CUSTOMER", text="The first turn arrives now.",
+    )
+    ordered = await platform.ingest_segment(
+        auth, call_id, segment_id="turn-a", revision=1, is_final=True,
+        speaker="AGENT", text="The second turn arrives after it.",
+    )
+    assert [segment["segment_id"] for segment in ordered["transcript"]] == ["turn-z", "turn-a"]
+
+
+@pytest.mark.asyncio
 async def test_read_permission_cannot_ingest(platform):
     view = await platform.start_call(platform.test_agent, "C001")
     with pytest.raises(AuthorizationError):

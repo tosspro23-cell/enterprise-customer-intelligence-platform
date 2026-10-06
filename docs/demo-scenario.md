@@ -1,6 +1,6 @@
 # Demo scenarios
 
-The Workbench is designed as a business-facing agent desktop. The left rail contains three synthetic multi-turn call Scripts; each dialogue turn arrives as its own transcript event, while the right side shows the current customer state and the assistance available to the agent. “跑完整对话” pauses for about 2.4 seconds after each spoken turn and a shorter pause after system events, so the state change remains visible in the browser:
+The Workbench is designed as a business-facing agent desktop. The left rail contains three synthetic multi-turn call Scripts; each dialogue turn arrives as its own transcript event and appears in a chat-style timeline with the customer on the left and the agent on the right. The right side shows the current customer state and the assistance available to the agent. “跑完整对话” pauses for about 2.4 seconds after each spoken turn and a shorter pause after system events, so the state change remains visible in the browser:
 
 - **费用投诉** (`C001`) — 13 alternating customer/agent turns move from an unrecognized charge to a confirmed resolution, with commercial assistance suppressed until the issue is resolved.
 - **储蓄咨询** (`C001`) — 7 alternating turns clarify the customer’s savings goal, product questions, and approved facts before the optional recommendation is evaluated.
@@ -19,7 +19,7 @@ The primary walkthrough is the **费用投诉** Script:
 9. **Post-call 分析** — bind the final transcript snapshot to a summary, themes, sentiment, and evidence refs.
 10. **重试与幂等** — run the same post-call operation again; it returns the existing record without duplicating it.
 
-The **客服工作台** shows the business state in action language: what the customer needs now, what the agent should do next, and whether an assistant suggestion is available. The transcript remains the primary timeline; metrics and assistance change only after the corresponding event has been processed. **Supervisor 历史分析** enumerates the authorized interaction records rather than selecting a small similarity sample, then exposes service outcome, decision history, post-call summary, evidence coverage, and expandable traces for the selected call.
+The **客服工作台** shows the business state in action language: what the customer needs now, what the agent should do next, and whether an assistant suggestion is available. The transcript remains the primary timeline; metrics and assistance change only after the corresponding event has been processed. **Supervisor 历史分析** is a separate historical-analysis console: it removes the Script navigation and live-call controls, then exposes the full authorized interaction history, aggregate service analysis, outcome distribution, post-call summary, evidence coverage, and expandable traces for the selected call.
 
 The scenario catalog is served by `GET /api/demo/scenarios`. Supervisor history is served by `GET /api/supervisor/interactions`, which combines persisted interaction records with the assistance and trace evidence needed for review.
 

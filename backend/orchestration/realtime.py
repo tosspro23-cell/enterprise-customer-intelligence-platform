@@ -136,6 +136,7 @@ class Platform:
             transcript={},
             transcript_event_versions={},
             processing={},
+            transcript_order=[],
             sentiment=SentimentState(),
             complaint=complaint,
             complaint_signal=ComplaintSignal(False, updated_at=now),
@@ -206,6 +207,8 @@ class Platform:
                 state.transcript[segment_id] = segment
                 state.processing[segment_id] = SegmentProcessingState(segment_id, revision)
                 state.canonical_transcript_version += 1
+                if segment_id not in state.transcript_order:
+                    state.transcript_order.append(segment_id)
                 state.transcript_event_versions[segment_id] = state.canonical_transcript_version
                 state.state_version += 1
                 state.derivation_status = "PENDING"

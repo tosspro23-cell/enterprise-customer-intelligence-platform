@@ -190,6 +190,7 @@ class CallState:
     derivation_status: Literal["PENDING", "COMPLETE", "FAILED"]
     transcript: dict[str, TranscriptSegment]
     processing: dict[str, SegmentProcessingState]
+    transcript_order: list[str]
     transcript_event_versions: dict[str, int]
     sentiment: SentimentState
     complaint: ComplaintState
@@ -202,9 +203,11 @@ class CallState:
     last_updated_at: datetime | None = None
 
     def canonical_snapshot(self) -> CanonicalTranscriptSnapshot:
+        ordered_keys = [key for key in self.transcript_order if key in self.transcript]
+        ordered_keys.extend(sorted(set(self.transcript) - set(ordered_keys)))
         ordered = tuple(
             self.transcript[key]
-            for key in sorted(self.transcript)
+            for key in ordered_keys
         )
         content = payload_hash(
             *[

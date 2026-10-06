@@ -199,6 +199,7 @@ async def supervisor_interactions(auth=Depends(get_auth)):
         for customer_id in sorted(auth.allowed_customer_ids):
             for record in platform.get_history(auth, customer_id):
                 traces = platform.store.traces(record["call_id"])
+                dialogue_turns = sum(trace["stage"] == "transcript_accepted" for trace in traces)
                 assistance = {
                     "outcomes": [
                         trace["output_ref"]
@@ -225,22 +226,38 @@ async def supervisor_interactions(auth=Depends(get_auth)):
                         if trace["stage"] in {"commercial_publication", "call_ended"}
                     ],
                 }
-                records.append({**record, "assistance": assistance, "traces": traces})
+                records.append({
+                    **record,
+                    "assistance": assistance,
+                    "dialogue_turns": dialogue_turns,
+                    "trace_count": len(traces),
+                    "traces": traces,
+                })
         records.sort(key=lambda item: item["created_at"], reverse=True)
         outcome_counts: dict[str, int] = {}
+        theme_counts: dict[str, int] = {}
+        sentiment_counts: dict[str, int] = {}
         for record in records:
             for outcome in record["assistance"]["outcomes"]:
                 outcome_counts[outcome] = outcome_counts.get(outcome, 0) + 1
+            for theme in json.loads(record["themes_json"]):
+                theme_counts[theme] = theme_counts.get(theme, 0) + 1
+            sentiment = record["overall_sentiment"]
+            sentiment_counts[sentiment] = sentiment_counts.get(sentiment, 0) + 1
+        evidence_coverage = sum(bool(json.loads(record["evidence_refs_json"])) for record in records)
         return {
             "records": records,
             "summary": {
                 "interaction_count": len(records),
                 "customer_count": len({record["customer_id"] for record in records}),
                 "outcome_counts": outcome_counts,
-                "evidence_coverage": sum(
-                    bool(json.loads(record["evidence_refs_json"]))
-                    for record in records
-                ),
+                "theme_counts": theme_counts,
+                "sentiment_counts": sentiment_counts,
+                "average_dialogue_turns": round(
+                    sum(record["dialogue_turns"] for record in records) / len(records), 1
+                ) if records else 0,
+                "evidence_coverage": evidence_coverage,
+                "evidence_coverage_rate": round(evidence_coverage / len(records) * 100, 1) if records else 0,
             },
         }
     except Exception as exc:
