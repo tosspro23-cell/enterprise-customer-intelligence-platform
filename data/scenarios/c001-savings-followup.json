@@ -1,0 +1,24 @@
+{
+  "scenario_id": "c001-savings-followup",
+  "title": "问题解决后的储蓄咨询",
+  "short_title": "储蓄咨询",
+  "category": "产品信息与后续建议",
+  "purpose": "展示客服如何先确认当前服务问题已完成，再给客户提供有事实依据的产品说明。",
+  "customer": {
+    "customer_id": "C001",
+    "name": "Sarah Chen",
+    "segment": "PERSONAL"
+  },
+  "steps": [
+    {"id":"start","label":"接入后续咨询","actor":"平台","description":"建立客户和当前通话的业务上下文。","action":"start"},
+    {"id":"service","label":"客户认可之前的帮助","actor":"客户","text":"Thanks for helping me with my account. The support was great.","description":"客服服务情绪为正面，系统保留这个 aspect，而不是把它当作商业许可。","action":"transcript","segment_id":"s-service"},
+    {"id":"savings","label":"客户询问自动储蓄","actor":"客户","text":"Now I want to understand how automatic savings rules work.","description":"对话主题转向 savings，平台准备查找批准的产品指导和结构化事实。","action":"transcript","segment_id":"s-savings"},
+    {"id":"resolve","label":"确认当前服务问题已完成","actor":"客服业务流程","description":"只有业务流程事件可以改变投诉权威，客户的积极表达本身不会自动解决问题。","action":"resolve"},
+    {"id":"recommend","label":"展示有依据的产品辅助","actor":"平台","description":"资格、产品事实、指导和解释校验通过后，客服才看到可选的后续方案。","action":"commercial"},
+    {"id":"server-published","label":"建议送达客服桌面","actor":"交付层","description":"记录服务端完成发布。","action":"server-published"},
+    {"id":"ui-ack","label":"客服桌面确认显示","actor":"客服工作台","description":"记录浏览器已经应用当前完整辅助快照。","action":"ack"},
+    {"id":"end","label":"结束通话","actor":"客服平台","description":"结束实时会话并撤回实时辅助。","action":"end"},
+    {"id":"post-call","label":"生成服务总结","actor":"分析 worker","description":"保存客户诉求、情绪、主题和 evidence refs。","action":"post-call"},
+    {"id":"idempotency","label":"确认重复执行安全","actor":"分析 worker","description":"再次执行同一 post-call job，不产生重复记录。","action":"post-call"}
+  ]
+}

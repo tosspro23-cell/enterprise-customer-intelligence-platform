@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -85,6 +86,13 @@ async def demo_scenario():
     from backend.services.scenario import load_demo_scenario
 
     return load_demo_scenario()
+
+
+@app.get("/api/demo/scenarios")
+async def demo_scenarios():
+    from backend.services.scenario import load_demo_scenarios
+
+    return {"scenarios": load_demo_scenarios()}
 
 
 @app.post("/api/calls")
@@ -179,5 +187,61 @@ async def traces(call_id: str, auth=Depends(get_auth)):
 async def history(customer_id: str, auth=Depends(get_auth)):
     try:
         return {"customer_id": customer_id, "records": platform.get_history(auth, customer_id)}
+    except Exception as exc:
+        raise _handle(exc) from exc
+
+
+@app.get("/api/supervisor/interactions")
+async def supervisor_interactions(auth=Depends(get_auth)):
+    """Enumerate authorized interaction records and their assistance evidence."""
+    try:
+        records = []
+        for customer_id in sorted(auth.allowed_customer_ids):
+            for record in platform.get_history(auth, customer_id):
+                traces = platform.store.traces(record["call_id"])
+                assistance = {
+                    "outcomes": [
+                        trace["output_ref"]
+                        for trace in traces
+                        if trace["stage"] == "commercial_policy" and trace.get("output_ref")
+                    ],
+                    "propensity_refs": [
+                        trace["output_ref"]
+                        for trace in traces
+                        if trace["stage"] == "propensity" and trace.get("output_ref")
+                    ],
+                    "guidance_refs": [
+                        trace["output_ref"]
+                        for trace in traces
+                        if trace["stage"] == "guidance_retrieval" and trace.get("output_ref")
+                    ],
+                    "lifecycle": [
+                        {
+                            "stage": trace["stage"],
+                            "status": trace["status"],
+                            "output_ref": trace.get("output_ref"),
+                        }
+                        for trace in traces
+                        if trace["stage"] in {"commercial_publication", "call_ended"}
+                    ],
+                }
+                records.append({**record, "assistance": assistance, "traces": traces})
+        records.sort(key=lambda item: item["created_at"], reverse=True)
+        outcome_counts: dict[str, int] = {}
+        for record in records:
+            for outcome in record["assistance"]["outcomes"]:
+                outcome_counts[outcome] = outcome_counts.get(outcome, 0) + 1
+        return {
+            "records": records,
+            "summary": {
+                "interaction_count": len(records),
+                "customer_count": len({record["customer_id"] for record in records}),
+                "outcome_counts": outcome_counts,
+                "evidence_coverage": sum(
+                    bool(json.loads(record["evidence_refs_json"]))
+                    for record in records
+                ),
+            },
+        }
     except Exception as exc:
         raise _handle(exc) from exc

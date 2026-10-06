@@ -1,6 +1,8 @@
 {
   "scenario_id": "c001-fee-resolution",
   "title": "从费用投诉到有证据的辅助建议",
+  "short_title": "费用投诉",
+  "category": "投诉与商业门控",
   "purpose": "用一通合成客户通话展示实时状态、商业门控、人工权威和 post-call 证据链。",
   "customer": {
     "customer_id": "C001",

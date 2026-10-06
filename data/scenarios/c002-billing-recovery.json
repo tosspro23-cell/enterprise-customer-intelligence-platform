@@ -1,0 +1,25 @@
+{
+  "scenario_id": "c002-billing-recovery",
+  "title": "账单争议与服务恢复",
+  "short_title": "账单争议",
+  "category": "费用与服务恢复",
+  "purpose": "展示客服先承接账单争议，再在问题解决后判断是否有合适的后续方案。",
+  "customer": {
+    "customer_id": "C002",
+    "name": "Alex Morgan",
+    "segment": "PERSONAL"
+  },
+  "steps": [
+    {"id":"start","label":"接入账单来电","actor":"平台","description":"把客户、通话和客服身份绑定到当前会话。","action":"start"},
+    {"id":"service","label":"客户肯定客服服务","actor":"客户","text":"The agent has been kind and helpful, but I was charged a monthly fee I did not expect.","description":"Transcript 同时包含服务正面反馈和费用不满，客服不能只看整体情绪。","action":"transcript","segment_id":"s-service"},
+    {"id":"fee","label":"客户要求先核查账单","actor":"客户","text":"I need someone to review this charge before anything else.","description":"费用主题和投诉信号持续存在，当前重点仍然是账单处理。","action":"transcript","segment_id":"s-fees"},
+    {"id":"suppress","label":"暂不展示商业建议","actor":"平台","description":"即使模型认为客户可能相关，未解决的账单问题仍然阻断额外商业推荐。","action":"commercial"},
+    {"id":"resolve","label":"客服完成问题处理","actor":"客服业务流程","description":"授权业务事件确认账单问题已经处理完成。","action":"resolve"},
+    {"id":"recommend","label":"生成后续辅助建议","actor":"平台","description":"当前问题解决后，资格、产品事实、指导和解释校验通过，建议才可出现。","action":"commercial"},
+    {"id":"server-published","label":"建议送达客服桌面","actor":"交付层","description":"记录服务端完成发布。","action":"server-published"},
+    {"id":"ui-ack","label":"客服桌面确认显示","actor":"客服工作台","description":"记录浏览器已经应用当前完整辅助快照。","action":"ack"},
+    {"id":"end","label":"结束通话","actor":"客服平台","description":"结束实时会话并撤回仍然活跃的辅助建议。","action":"end"},
+    {"id":"post-call","label":"生成服务总结","actor":"分析 worker","description":"把最终 transcript snapshot 写入 post-call interaction record。","action":"post-call"},
+    {"id":"idempotency","label":"确认重复执行安全","actor":"分析 worker","description":"再次执行同一 post-call job，不产生重复记录。","action":"post-call"}
+  ]
+}
