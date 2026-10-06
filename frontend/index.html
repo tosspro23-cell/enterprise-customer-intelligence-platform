@@ -5,198 +5,70 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Customer Intelligence Workbench</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0b1118;
-      --panel: #131d28;
-      --panel-2: #0f1721;
-      --line: #2b3b4c;
-      --muted: #91a0b3;
-      --text: #edf3f8;
-      --accent: #73d6bd;
-      --accent-2: #7eb7ff;
-      --warn: #f6c85f;
-      --bad: #ff8f8f;
-      --good-bg: #19483d;
-      --warn-bg: #58461c;
-      --bad-bg: #542b31;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at 80% 0%, #183044 0, transparent 34%), linear-gradient(145deg, var(--bg), #111b27);
-      color: var(--text);
-    }
-    main { max-width: 1380px; margin: 0 auto; padding: 30px 22px 56px; }
-    header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 20px; }
-    h1 { margin: 0; font-size: 30px; letter-spacing: -.04em; }
-    h2 { margin: 0 0 13px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
-    h3 { margin: 0; font-size: 15px; }
-    p { line-height: 1.55; }
-    .subtitle { color: var(--muted); margin-top: 7px; max-width: 680px; }
-    .header-status { text-align: right; min-width: 245px; }
-    #status { min-height: 22px; color: var(--accent); font-size: 13px; }
-    .error { color: var(--bad) !important; }
-    .panel { background: rgba(19, 29, 40, .9); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: 0 14px 34px #0003; }
-    .wide { grid-column: 1 / -1; }
-    .grid { display: grid; grid-template-columns: 1.02fr .98fr; gap: 16px; margin-top: 16px; }
-    .hero { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; }
-    .eyebrow { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; }
-    .hero h2 { color: var(--text); text-transform: none; letter-spacing: -.01em; font-size: 21px; margin: 7px 0 8px; }
-    .hero p { color: #c6d2de; margin: 0; max-width: 760px; }
-    .controls { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
-    button { border: 1px solid #3c536a; background: #1b2b3b; color: #f4f8fb; border-radius: 9px; padding: 9px 13px; cursor: pointer; font-weight: 700; }
-    button:hover { border-color: var(--accent); transform: translateY(-1px); }
-    button:disabled { opacity: .42; cursor: not-allowed; transform: none; }
-    .primary { background: #1d4a49; border-color: #3d9e91; }
-    .secondary { background: #1c3552; border-color: #557fac; }
-    .subtle { background: transparent; border-color: var(--line); color: var(--muted); }
-    .explain-box { border: 1px solid #315468; border-radius: 12px; padding: 13px; background: linear-gradient(135deg, #142738, #101b26); }
-    .explain-box strong { display: block; color: var(--accent-2); margin-bottom: 7px; }
-    .scenario-layout { display: grid; grid-template-columns: .92fr 1.08fr; gap: 16px; }
-    .step-list { display: flex; flex-direction: column; gap: 7px; max-height: 440px; overflow: auto; padding-right: 3px; }
-    .step { display: grid; grid-template-columns: 28px 1fr auto; gap: 9px; align-items: start; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--panel-2); }
-    .step.current { border-color: var(--accent); box-shadow: 0 0 0 1px #73d6bd33; }
-    .step.done { border-color: #35665b; background: #12271f; }
-    .step-number { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #26384b; color: #c9d6e4; font-size: 12px; font-weight: 800; }
-    .step.done .step-number { background: var(--good-bg); color: var(--accent); }
-    .step.current .step-number { background: #29675c; color: #fff; }
-    .step-title { font-weight: 750; font-size: 13px; }
-    .step-desc { color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.45; }
-    .step-text { color: #dbe8f1; font-size: 12px; margin-top: 6px; font-style: italic; }
-    .step-actor { color: var(--muted); font-size: 11px; white-space: nowrap; }
-    .next-explainer { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #101a24; min-height: 120px; }
-    .next-explainer .big { font-size: 19px; font-weight: 750; margin: 7px 0; }
-    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .metric { border: 1px solid var(--line); padding: 10px; border-radius: 10px; background: var(--panel-2); }
-    .metric small { display: block; color: var(--muted); font-size: 11px; }
-    .metric strong { display: block; margin-top: 5px; font-size: 17px; }
-    .meta { color: var(--muted); font-size: 12px; }
-    .pill { display: inline-block; padding: 4px 8px; border-radius: 99px; background: #253448; font-size: 12px; margin: 2px 3px 2px 0; }
-    .pill.good { background: var(--good-bg); color: #a9f3d8; }
-    .pill.warn { background: var(--warn-bg); color: #ffe59a; }
-    .pill.bad { background: var(--bad-bg); color: #ffc1c1; }
-    .pill.blue { background: #203d60; color: #b9d9ff; }
-    .kv { display: grid; grid-template-columns: minmax(125px, .45fr) 1fr; gap: 8px 14px; font-size: 13px; }
-    .kv dt { color: var(--muted); }
-    .kv dd { margin: 0; word-break: break-word; }
-    .call-summary { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-    .transcript { display: flex; flex-direction: column; gap: 9px; max-height: 360px; overflow: auto; }
-    .segment { padding: 11px 13px; border-left: 3px solid #45627d; background: #121a24; border-radius: 7px; }
-    .segment.customer { border-left-color: var(--accent); }
-    .speaker { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
-    .segment p { margin: 0; }
-    .signals { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
-    .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; }
-    .stage { position: relative; min-height: 112px; border: 1px solid var(--line); border-radius: 11px; padding: 11px; background: var(--panel-2); }
-    .stage:not(:last-child)::after { content: "→"; position: absolute; right: -15px; top: 42px; color: #637d93; z-index: 1; }
-    .stage-name { font-size: 12px; font-weight: 750; line-height: 1.3; }
-    .stage-status { margin-top: 12px; font-size: 12px; }
-    .stage-detail { margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.4; word-break: break-word; }
-    .stage.ok { border-color: #35665b; }
-    .stage.warn { border-color: #705d2b; }
-    .stage.bad { border-color: #78424a; }
-    .stage.idle { opacity: .66; }
-    .decision { border: 1px solid #3b5467; border-radius: 12px; padding: 14px; margin-bottom: 9px; background: #111b25; }
-    .decision.recommend { border-color: #48ad91; }
-    .decision.suppress, .decision.no_eligible_option { border-color: #ad8d48; }
-    .decision.unavailable { border-color: #a55f67; }
-    .decision p { margin: 11px 0 0; line-height: 1.55; color: #deebf3; }
-    .evidence { color: var(--muted); font-size: 12px; margin-top: 9px; line-height: 1.5; }
-    .reason-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-    .reason-card { border: 1px solid var(--line); padding: 11px; border-radius: 10px; background: var(--panel-2); }
-    .reason-card h4 { margin: 0 0 7px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-    .reason-card p { margin: 0; font-size: 13px; }
-    .trace-table { overflow: auto; max-height: 350px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th, td { border-bottom: 1px solid var(--line); text-align: left; padding: 9px 7px; vertical-align: top; }
-    th { color: var(--muted); font-weight: 600; }
-    .json { white-space: pre-wrap; word-break: break-word; color: #c9d6e4; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 310px; overflow: auto; background: #0b1016; padding: 12px; border-radius: 10px; }
-    details { margin-top: 12px; }
-    summary { cursor: pointer; color: var(--accent-2); font-size: 12px; }
-    .empty { color: var(--muted); font-size: 13px; }
-    .footer-note { color: var(--muted); font-size: 12px; margin-top: 16px; }
-    @media(max-width: 1050px) { .pipeline { grid-template-columns: repeat(3, 1fr); } .stage:nth-child(3)::after, .stage:nth-child(5)::after { display:none; } }
-    @media(max-width: 850px) { main { padding: 22px 14px 40px; } header, .hero, .scenario-layout { display: block; } .header-status { text-align: left; margin-top: 13px; } .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } .metrics { grid-template-columns: repeat(2, 1fr); } .pipeline { grid-template-columns: 1fr 1fr; } .stage::after { display:none; } .reason-grid { grid-template-columns: 1fr; } }
+    :root { color-scheme: dark; --bg:#0b1118; --panel:#131d28; --panel2:#0f1721; --line:#2b3b4c; --muted:#91a0b3; --text:#edf3f8; --accent:#73d6bd; --blue:#7eb7ff; --warn:#f6c85f; --bad:#ff8f8f; --good-bg:#19483d; --warn-bg:#58461c; --bad-bg:#542b31; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at 82% 0%,#183044 0,transparent 34%),linear-gradient(145deg,var(--bg),#111b27); color:var(--text); }
+    main { max-width:1380px; margin:0 auto; padding:28px 22px 56px; }
+    header { display:flex; justify-content:space-between; gap:24px; align-items:flex-start; margin-bottom:18px; }
+    h1 { margin:0; font-size:28px; letter-spacing:-.04em; } h2 { margin:0 0 13px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; } h3 { margin:0; font-size:17px; } h4 { margin:0 0 7px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+    p { line-height:1.55; } .subtitle { color:var(--muted); margin-top:7px; max-width:740px; } .meta,.empty { color:var(--muted); font-size:12px; } .error { color:var(--bad)!important; }
+    .header-right { text-align:right; min-width:300px; } #status { min-height:22px; color:var(--accent); font-size:13px; margin-top:7px; }
+    .roles { display:flex; justify-content:flex-end; gap:6px; margin-bottom:8px; } .role { padding:7px 10px; font-size:12px; border-radius:8px; background:transparent; color:var(--muted); border:1px solid var(--line); } .role.active { color:var(--text); border-color:var(--accent); background:#173e3b; }
+    .panel { background:rgba(19,29,40,.92); border:1px solid var(--line); border-radius:15px; padding:17px; box-shadow:0 14px 34px #0003; } .wide { grid-column:1/-1; }
+    .call-bar { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:12px; align-items:center; padding:13px 16px; background:#142638; border-color:#315468; }
+    .call-identity { display:flex; align-items:center; gap:11px; } .avatar { width:37px; height:37px; border-radius:50%; display:grid; place-items:center; color:#08201d; background:var(--accent); font-weight:850; } .identity-name { font-weight:750; } .identity-sub { color:var(--muted); font-size:12px; margin-top:3px; }
+    .bar-group { padding-left:13px; border-left:1px solid #385267; } .bar-label { color:var(--muted); font-size:11px; } .bar-value { margin-top:4px; font-weight:700; }
+    .demo-panel { margin-top:13px; padding:13px 16px; } .demo-top { display:flex; justify-content:space-between; gap:12px; align-items:center; } .demo-title { color:var(--blue); font-weight:750; font-size:13px; } .controls { display:flex; flex-wrap:wrap; gap:8px; } button { border:1px solid #3c536a; background:#1b2b3b; color:#f4f8fb; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:700; } button:hover { border-color:var(--accent); transform:translateY(-1px); } button:disabled { opacity:.4; cursor:not-allowed; transform:none; } button.primary { background:#1d4a49; border-color:#3d9e91; } button.secondary { background:#1c3552; border-color:#557fac; } button.subtle { background:transparent; color:var(--muted); }
+    .progress { display:flex; flex-wrap:wrap; gap:5px; margin-top:11px; } .progress-step { display:flex; align-items:center; gap:5px; color:var(--muted); font-size:11px; } .progress-step::after { content:"→"; color:#526b7e; margin-left:2px; } .progress-step:last-child::after { content:""; } .progress-step.current { color:var(--text); font-weight:750; } .progress-step.done { color:var(--accent); } .progress-dot { width:18px; height:18px; border-radius:50%; display:grid; place-items:center; background:#26384b; font-size:10px; } .done .progress-dot { background:var(--good-bg); } .current .progress-dot { background:#29675c; color:#fff; }
+    .next-event { color:#d6e2eb; font-size:12px; margin-top:10px; } .next-event strong { color:var(--accent); }
+    .grid { display:grid; grid-template-columns:1.15fr .85fr; gap:15px; margin-top:15px; } .hero-grid { display:grid; grid-template-columns:1.25fr .75fr; gap:15px; }
+    .focus { min-height:215px; border-color:#416f67; background:linear-gradient(135deg,#142d30,#111b25); } .focus .eyebrow { color:var(--accent); font-size:11px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; } .focus h3 { font-size:23px; margin:8px 0 8px; letter-spacing:-.03em; } .focus p { max-width:650px; margin:0; color:#d7e5ed; }
+    .action-line { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; } .pill { display:inline-block; padding:4px 8px; border-radius:99px; background:#253448; font-size:12px; margin:2px 3px 2px 0; } .pill.good { background:var(--good-bg); color:#a9f3d8; } .pill.warn { background:var(--warn-bg); color:#ffe59a; } .pill.bad { background:var(--bad-bg); color:#ffc1c1; } .pill.blue { background:#203d60; color:#b9d9ff; }
+    .human-note { padding:10px 12px; border-left:3px solid var(--blue); background:#122235; color:#cbdbe8; font-size:12px; border-radius:6px; margin-top:14px; }
+    .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; } .summary-card { border:1px solid var(--line); background:var(--panel2); border-radius:10px; padding:11px; } .summary-card strong { display:block; font-size:16px; margin-top:3px; } .summary-card p { margin:4px 0 0; font-size:12px; }
+    .transcript { display:flex; flex-direction:column; gap:8px; max-height:340px; overflow:auto; } .segment { border-left:3px solid #45627d; background:#121a24; border-radius:6px; padding:10px 12px; } .segment.customer { border-left-color:var(--accent); } .speaker { color:var(--muted); font-size:11px; margin-bottom:5px; text-transform:uppercase; } .segment p { margin:0; }
+    .workflow { display:flex; flex-direction:column; gap:8px; } .workflow-row { display:grid; grid-template-columns:23px 1fr auto; gap:9px; align-items:center; padding:9px 10px; background:var(--panel2); border:1px solid var(--line); border-radius:9px; } .workflow-row.active { border-color:var(--accent); } .workflow-row.done { border-color:#35665b; } .workflow-icon { width:21px; height:21px; display:grid; place-items:center; border-radius:50%; background:#26384b; font-size:11px; } .done .workflow-icon { background:var(--good-bg); color:var(--accent); } .workflow-name { font-size:13px; font-weight:700; } .workflow-detail { color:var(--muted); font-size:11px; margin-top:2px; } .workflow-state { font-size:11px; color:var(--muted); white-space:nowrap; }
+    .decision { border:1px solid #3b5467; border-radius:11px; padding:13px; margin-bottom:8px; background:#111b25; } .decision.recommend { border-color:#48ad91; } .decision.suppress,.decision.no_eligible_option { border-color:#ad8d48; } .decision.unavailable { border-color:#a55f67; } .decision p { margin:9px 0 0; color:#deebf3; line-height:1.55; } .evidence { color:var(--muted); font-size:11px; line-height:1.5; margin-top:8px; }
+    .kv { display:grid; grid-template-columns:125px 1fr; gap:8px 12px; font-size:13px; } .kv dt { color:var(--muted); } .kv dd { margin:0; word-break:break-word; }
+    .supervisor-panel,.evidence-panel { display:none; } body[data-role="supervisor"] .agent-panel, body[data-role="evidence"] .agent-panel { display:none; } body[data-role="supervisor"] .supervisor-panel { display:block; } body[data-role="evidence"] .evidence-panel { display:block; } body[data-role="supervisor"] .supervisor-panel.wide, body[data-role="evidence"] .evidence-panel.wide { display:block; }
+    .review-banner { padding:12px 13px; background:#122335; border:1px solid #315468; border-radius:10px; margin-bottom:12px; } .review-banner strong { display:block; color:var(--blue); margin-bottom:5px; }
+    .reason-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; } .reason-card { border:1px solid var(--line); padding:11px; border-radius:9px; background:var(--panel2); font-size:12px; } .reason-card p { margin:0; line-height:1.5; }
+    .pipeline { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .stage { min-height:103px; border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--panel2); } .stage.ok { border-color:#35665b; } .stage.warn { border-color:#705d2b; } .stage.bad { border-color:#78424a; } .stage.idle { opacity:.62; } .stage-name { font-size:12px; font-weight:750; line-height:1.3; } .stage-status { margin-top:10px; font-size:11px; } .stage-detail { color:var(--muted); font-size:10px; line-height:1.4; margin-top:5px; word-break:break-word; }
+    .trace-table { overflow:auto; max-height:350px; } table { width:100%; border-collapse:collapse; font-size:11px; } th,td { border-bottom:1px solid var(--line); padding:8px 6px; text-align:left; vertical-align:top; } th { color:var(--muted); font-weight:600; } .json { white-space:pre-wrap; word-break:break-word; color:#c9d6e4; font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; max-height:300px; overflow:auto; background:#0b1016; padding:11px; border-radius:8px; } details { margin-top:11px; } summary { cursor:pointer; color:var(--blue); font-size:12px; }
+    .footer-note { color:var(--muted); font-size:11px; margin:13px 0 0; } @media(max-width:1050px) { .pipeline{grid-template-columns:repeat(3,1fr);} } @media(max-width:850px) { main{padding:20px 13px 42px;} header,.call-bar,.hero-grid{display:block;} .header-right{text-align:left;margin-top:14px;} .roles{justify-content:flex-start;} .grid{grid-template-columns:1fr;} .wide{grid-column:auto;} .bar-group{border-left:0;padding-left:0;margin-top:10px;} .summary-grid,.reason-grid{grid-template-columns:1fr;} .pipeline{grid-template-columns:1fr 1fr;} }
   </style>
 </head>
-<body>
+<body data-role="agent">
 <main>
   <header>
-    <div>
-      <h1>Customer Intelligence Workbench</h1>
-      <div class="subtitle">把一通客户来电走成一条可理解、可追溯的业务链：客户说了什么，平台怎样判断，客服为什么看到或看不到某个辅助建议。</div>
-    </div>
-    <div class="header-status"><div class="meta">本地演示工作区</div><div id="status">正在加载业务剧本…</div></div>
+    <div><h1>Customer Intelligence Workbench</h1><div class="subtitle">给客服和 supervisor 使用的客户通话辅助工作台：先看客户要解决什么，再看 AI 是否有合适、合规、可解释的下一步。</div></div>
+    <div class="header-right"><div class="roles"><button class="role active" data-role="agent">客服视图</button><button class="role" data-role="supervisor">Supervisor 复盘</button><button class="role" data-role="evidence">技术证据</button></div><div class="meta">本地业务流程演示</div><div id="status">正在加载业务剧本…</div></div>
   </header>
 
-  <section class="panel hero">
-    <div>
-      <div class="eyebrow">Guided end-to-end demonstration</div>
-      <h2>从实时通话到 post-call 证据</h2>
-      <p>这不是一组孤立按钮，而是一条客服平台的业务流程。按剧本推进时，每一步都会更新当前通话、实时 transcript、情绪和主题、投诉权威、商业门控、辅助建议生命周期，以及通话结束后的 interaction record。</p>
-      <div class="controls">
-        <button class="primary" id="next">执行下一步</button>
-        <button class="secondary" id="run-all">跑完整个业务剧本</button>
-        <button class="subtle" id="reset">重新开始</button>
-      </div>
-    </div>
-    <div class="explain-box">
-      <strong>你现在正在看什么？</strong>
-      <div class="meta">Workbench 是一个可观测的业务流程演示器。它用合成客户和本地确定性服务，展示实时辅助如何受到事实、政策和人工权威约束。</div>
-      <div id="next-summary" class="meta" style="margin-top:12px">加载后会显示下一步业务动作。</div>
-    </div>
+  <section class="panel call-bar">
+    <div class="call-identity"><div class="avatar" id="avatar">—</div><div><div class="identity-name" id="identity-name">等待接入客户</div><div class="identity-sub" id="identity-sub">先运行演示，再开始一通合成客户来电</div></div></div>
+    <div class="bar-group"><div class="bar-label">当前通话</div><div class="bar-value" id="call-status">尚未开始</div></div>
+    <div class="bar-group"><div class="bar-label">现在最重要的事</div><div class="bar-value" id="call-focus">接入客户并听取诉求</div></div>
   </section>
 
-  <section class="panel wide" style="margin-top:16px">
-    <div class="scenario-layout">
-      <div>
-        <h2>业务剧本 · 当前进度 <span id="progress-label" class="meta"></span></h2>
-        <div id="steps" class="step-list"><div class="empty">正在加载…</div></div>
-      </div>
-      <div>
-        <h2>本步说明</h2>
-        <div id="step-detail" class="next-explainer"><div class="empty">选择“执行下一步”开始建立通话。</div></div>
-        <p class="footer-note">建议第一次体验：按顺序执行完整剧本；第二次可以在“费用投诉”之后停下来，观察商业建议为何被压制，再继续解决投诉。</p>
-      </div>
-    </div>
+  <section class="panel demo-panel">
+    <div class="demo-top"><div><div class="demo-title">演示推进 · <span id="progress-label">0 / 11</span></div><div class="next-event" id="next-event">下一步：<strong>建立通话</strong> · 绑定客户、通话和客服身份</div></div><div class="controls"><button class="primary" id="next">执行下一步</button><button class="secondary" id="run-all">跑完整条业务链</button><button class="subtle" id="reset">重新开始</button></div></div>
+    <div id="progress" class="progress"></div>
   </section>
 
   <div class="grid">
-    <section class="panel">
-      <h2>当前通话状态</h2>
-      <div id="metrics" class="metrics"></div>
-      <div id="customer" class="call-summary"><span class="empty">还没有开始通话。</span></div>
-      <div id="complaint" class="call-summary"></div>
-      <div id="signals" class="signals"></div>
-    </section>
-    <section class="panel">
-      <h2>实时辅助结果</h2>
-      <div id="assistance"><span class="empty">当业务流程走到辅助决策时，结果会出现在这里。</span></div>
-    </section>
-    <section class="panel">
-      <h2>实时 transcript</h2>
-      <div id="transcript" class="transcript"><span class="empty">客户说的话会按 canonical revision 显示在这里。</span></div>
-    </section>
-    <section class="panel">
-      <h2>为什么得到这个结果</h2>
-      <div id="reasoning"><span class="empty">平台还没有形成商业判断。</span></div>
-    </section>
-    <section class="panel wide">
-      <h2>在线辅助决策链</h2>
-      <div id="pipeline" class="pipeline"></div>
-      <p class="footer-note">“预测”只说明可能相关；“资格”说明能不能提供；“政策”说明此刻是否允许；“解释校验”确保给客服的文字没有越过结构化事实和指导依据。</p>
-    </section>
-    <section class="panel">
-      <h2>Post-call 分析</h2>
-      <div id="post-result"><span class="empty">结束通话并运行 post-call 后，这里会显示 snapshot、summary、themes、sentiment 和 evidence。</span></div>
-    </section>
-    <section class="panel">
-      <h2>交付与证据</h2>
-      <div id="delivery"><span class="empty">发布到服务器和浏览器确认是两个独立的生命周期事件。</span></div>
-      <details><summary>查看完整 trace 记录</summary><div id="traces" class="trace-table" style="margin-top:10px"><span class="empty">暂无 trace。</span></div></details>
-    </section>
+    <section class="panel focus agent-panel wide"><div class="eyebrow">客服现在应该关注什么</div><h3 id="focus-title">准备接入客户</h3><p id="focus-copy">点击“执行下一步”开始。Workbench 会模拟客户说话、系统分析和客服可用的辅助建议。</p><div id="focus-actions" class="action-line"></div><div id="human-note" class="human-note">AI 只提供当前上下文中的辅助；是否采用建议、怎样与客户沟通，始终由客服决定。</div></section>
+
+    <section class="panel agent-panel"><h2>客户与当前状态</h2><div class="summary-grid" id="customer-summary"><div class="summary-card"><h4>客户</h4><strong>—</strong><p>等待通话开始</p></div><div class="summary-card"><h4>通话</h4><strong>—</strong><p>尚未建立</p></div></div><div class="reason-grid" style="margin-top:10px" id="business-signals"><div class="reason-card"><h4>客户情绪</h4><p class="empty">暂无</p></div><div class="reason-card"><h4>客户正在谈什么</h4><p class="empty">暂无</p></div><div class="reason-card"><h4>投诉状态</h4><p class="empty">暂无</p></div><div class="reason-card"><h4>商业建议</h4><p class="empty">暂无</p></div></div></section>
+    <section class="panel agent-panel"><h2>客户刚刚说了什么</h2><div id="transcript" class="transcript"><span class="empty">实时 transcript 会显示在这里。</span></div><p class="footer-note">客服看到的是当前对话的业务摘要；技术版本和事件证据在“技术证据”视图中。</p></section>
+    <section class="panel agent-panel"><h2>服务流程进度</h2><div id="workflow" class="workflow"></div><p class="footer-note">流程状态帮助客服理解系统正在做什么，不要求客服理解模型或基础设施细节。</p></section>
+    <section class="panel agent-panel wide"><h2>当前辅助建议</h2><div id="assistance"><span class="empty">当系统形成一个对客服有用的结果时，会显示在这里。</span></div></section>
+
+    <section class="panel supervisor-panel wide"><div class="review-banner"><strong>Supervisor 复盘视图</strong><span class="meta">用于确认客户问题是否被识别、辅助是否遵守业务门控、以及 post-call 记录是否有足够证据。它不是客服操作按钮。</span></div><div class="hero-grid"><div><h2>本次会话结论</h2><div id="supervisor-summary"><span class="empty">通话结束后生成复盘结论。</span></div></div><div><h2>业务风险与控制</h2><div id="supervisor-controls"><span class="empty">暂无需要关注的控制点。</span></div></div></div></section>
+    <section class="panel supervisor-panel"><h2>辅助建议历史</h2><div id="decision-history"><span class="empty">建议产生后会在这里保留业务结果和生命周期。</span></div></section>
+    <section class="panel supervisor-panel"><h2>Post-call 记录</h2><div id="post-result"><span class="empty">结束通话并执行 post-call 后，这里会显示 interaction record。</span></div></section>
+
+    <section class="panel evidence-panel wide"><div class="review-banner"><strong>技术证据视图</strong><span class="meta">这一层服务于开发、架构评审和验收；它不应成为客服的默认工作界面。</span></div><div id="evidence-overview"><span class="empty">开始通话后显示版本、依赖和交付状态。</span></div><h2 style="margin-top:16px">决策链 trace</h2><div id="pipeline" class="pipeline"></div><details><summary>查看完整 trace 记录</summary><div id="traces" class="trace-table" style="margin-top:10px"><span class="empty">暂无 trace。</span></div></details></section>
   </div>
 </main>
 
@@ -204,218 +76,153 @@
   const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8765' : '';
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const pretty = (value) => value === null || value === undefined ? '—' : esc(value);
-  let scenario = null;
-  let stepIndex = 0;
-  let callId = null;
-  let latestDecision = null;
-  let lastPostCall = null;
-  let busy = false;
+  let scenario = null, stepIndex = 0, callId = null, latestDecision = null, lastView = null, lastPostCall = null, busy = false, activeRole = 'agent';
+  const observedDecisions = new Map();
+  const PIPELINE = [['call_started','建立通话'],['transcript_accepted','接收 transcript'],['transcript_derivation','情绪、主题与投诉信号'],['propensity','相关性预测'],['eligibility','资格判断'],['commercial_policy','商业政策'],['guidance_retrieval','指导检索'],['llm_explanation','生成辅助文字'],['explanation_validation','解释校验'],['commercial_publication','发布与生命周期'],['post_call_enrichment','Post-call 记录']];
 
-  function setStatus(text, error = false) {
-    $('status').textContent = text;
-    $('status').className = error ? 'error' : '';
-  }
-
+  function setStatus(text, error = false) { $('status').textContent = text; $('status').className = error ? 'error' : ''; }
   async function api(path, options = {}) {
     let response;
-    try {
-      response = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
-    } catch (error) {
-      throw new Error('后端还没有连接。请先启动本地 API，再用 http://127.0.0.1:8765 打开 Workbench。');
-    }
-    let data = {};
-    try { data = await response.json(); } catch (_) { /* preserve a useful error below */ }
+    try { response = await fetch(`${API_BASE}${path}`, { headers:{'Content-Type':'application/json'}, ...options }); }
+    catch (_) { throw new Error('后端还没有连接。请先启动本地 API，再用 HTTP 地址打开 Workbench。'); }
+    let data = {}; try { data = await response.json(); } catch (_) {}
     if (!response.ok) throw new Error(data.detail || `请求失败（${response.status}）`);
     return data;
   }
+  function outcomeTone(outcome) { return outcome === 'RECOMMEND' ? 'good' : outcome === 'SUPPRESS' || outcome === 'NO_ELIGIBLE_OPTION' ? 'warn' : 'bad'; }
+  function currentStep() { return scenario?.steps?.[stepIndex]; }
 
-  function renderScenario() {
+  function renderProgress() {
     if (!scenario) return;
-    const steps = scenario.steps || [];
+    const steps = scenario.steps || [], current = currentStep();
     $('progress-label').textContent = `${Math.min(stepIndex, steps.length)} / ${steps.length}`;
-    $('steps').innerHTML = steps.map((step, index) => {
-      const state = index < stepIndex ? 'done' : index === stepIndex ? 'current' : '';
-      const mark = index < stepIndex ? '✓' : index + 1;
-      return `<div class="step ${state}"><div class="step-number">${mark}</div><div><div class="step-title">${esc(step.label)}</div><div class="step-desc">${esc(step.description)}</div>${step.text ? `<div class="step-text">“${esc(step.text)}”</div>` : ''}</div><div class="step-actor">${esc(step.actor)}</div></div>`;
-    }).join('');
-    const current = steps[stepIndex];
-    $('next-summary').innerHTML = current ? `<span class="meta">下一步 · ${esc(current.actor)}</span><div class="big">${esc(current.label)}</div><span class="meta">${esc(current.description)}</span>` : '<span class="pill good">剧本已完成</span><div style="margin-top:8px">可以重新开始，再观察每个阶段的证据。</div>';
-    $('step-detail').innerHTML = current ? `<div class="eyebrow">Step ${stepIndex + 1} · ${esc(current.action)}</div><div class="big">${esc(current.label)}</div><p style="margin:8px 0 0">${esc(current.description)}</p>${current.text ? `<p style="margin:10px 0 0;color:#dbe8f1">客户原话：<br><em>“${esc(current.text)}”</em></p>` : ''}<div class="meta" style="margin-top:12px">执行者：${esc(current.actor)}</div>` : '<span class="pill good">完整链路已完成</span><p style="margin-bottom:0">现在可以查看最终的通话证据和 post-call 记录。</p>';
-    $('next').disabled = busy || !current;
-    $('run-all').disabled = busy || !current;
+    $('progress').innerHTML = steps.map((step, index) => `<div class="progress-step ${index < stepIndex ? 'done' : index === stepIndex ? 'current' : ''}"><span class="progress-dot">${index < stepIndex ? '✓' : index + 1}</span>${esc(step.label)}</div>`).join('');
+    $('next-event').innerHTML = current ? `下一步：<strong>${esc(current.label)}</strong> · ${esc(current.description)}` : '<span class="pill good">完整业务链已完成</span>';
+    $('next').disabled = busy || !current; $('run-all').disabled = busy || !current;
   }
 
-  function renderView(view) {
-    if (!view || !view.call) return;
-    const call = view.call;
-    $('metrics').innerHTML = [['状态', call.status], ['状态版本', call.state_version], ['Transcript 版本', call.canonical_transcript_version], ['UI 序号', call.ui_seq]].map(([label, value]) => `<div class="metric"><small>${label}</small><strong>${pretty(value)}</strong></div>`).join('');
-    const customer = view.customer || {};
-    $('customer').innerHTML = `<span class="pill good">${esc(customer.name || customer.customer_id || '未知客户')}</span><span class="pill">${esc(customer.segment || '—')}</span><span class="meta">call ${esc(call.call_id)}</span>`;
-    const complaint = view.complaint || {};
-    const signal = view.complaint_signal || {};
-    $('complaint').innerHTML = `<span class="pill ${complaint.status === 'RESOLVED' ? 'good' : 'warn'}">投诉权威：${esc(complaint.status || '—')}</span><span class="pill ${signal.active ? 'bad' : 'good'}">实时投诉信号：${signal.active ? 'ACTIVE' : 'clear'}</span>`;
-    const sentiment = view.sentiment || {};
-    const aspectLabels = Object.entries(sentiment.aspects || {}).map(([name, item]) => `<span class="pill ${item.label === 'NEGATIVE' ? 'bad' : item.label === 'POSITIVE' ? 'good' : ''}">${esc(name)} · ${esc(item.label)}</span>`).join('');
-    $('signals').innerHTML = `<span class="pill blue">整体情绪：${esc(sentiment.overall_label || '—')}</span>${aspectLabels}<span class="pill">主题：${esc((view.themes || []).join('、') || '暂无')}</span>`;
-    const segments = view.transcript || [];
-    $('transcript').innerHTML = segments.length ? segments.map((segment) => `<div class="segment ${segment.speaker === 'CUSTOMER' ? 'customer' : ''}"><div class="speaker">${esc(segment.speaker)} · revision ${esc(segment.revision)} · ${segment.is_final ? 'final' : 'interim'}</div><p>${esc(segment.text)}</p></div>`).join('') : '<span class="empty">客户说的话会按 canonical revision 显示在这里。</span>';
+  function renderCallBar(view) {
+    const call = view?.call, customer = view?.customer || {};
+    if (!call) return;
+    $('avatar').textContent = (customer.name || '?').split(' ').map((part) => part[0]).join('').slice(0,2).toUpperCase();
+    $('identity-name').textContent = customer.name || customer.customer_id || '当前客户';
+    $('identity-sub').textContent = `${customer.segment || '—'} · ${customer.language || 'en'} · 当前会话`;
+    $('call-status').innerHTML = `<span class="pill ${call.status === 'ACTIVE' ? 'good' : call.status === 'ENDED' ? 'blue' : 'warn'}">${esc(call.status)}</span>`;
+    const complaint = view.complaint || {}, signal = view.complaint_signal || {};
+    $('call-focus').textContent = call.status === 'ENDED' ? '查看本次服务总结' : complaint.status !== 'RESOLVED' || signal.active ? '先处理客户的费用问题' : '判断是否需要后续辅助建议';
+  }
+
+  function renderAgentFocus(view) {
+    const call = view?.call, complaint = view?.complaint || {}, signal = view?.complaint_signal || {}, context = view?.commercial_context || {}, decisions = view?.assistance?.decisions || [];
+    if (!call) return;
+    if (call.status === 'ENDED') {
+      $('focus-title').textContent = '通话已结束，实时建议已撤回';
+      $('focus-copy').textContent = '现在进入 post-call 复盘：系统会把最终 transcript snapshot 转成一次可追溯的 interaction record。';
+      $('focus-actions').innerHTML = '<span class="pill blue">进入 Supervisor 复盘查看结果</span>';
+    } else if (decisions.some((d) => d.business_outcome === 'RECOMMEND')) {
+      const product = context.product_facts || {};
+      $('focus-title').textContent = `可以考虑 ${product.name || '可用方案'}`;
+      $('focus-copy').textContent = '客户的当前问题已经通过业务流程处理，系统确认存在一个符合资格的后续方案。客服可以根据对话判断是否自然地介绍它。';
+      $('focus-actions').innerHTML = `<span class="pill good">建议可用</span><span class="pill">${esc(product.currency || '')} ${esc(product.monthly_fee || '')} / 月</span><span class="pill">由客服决定是否采用</span>`;
+    } else if (complaint.status !== 'RESOLVED' || signal.active || context.policy?.outcome === 'SUPPRESS') {
+      $('focus-title').textContent = '先处理客户的费用问题';
+      $('focus-copy').textContent = '系统识别到客户对月费不满。此时不展示额外商业推荐，客服应先承接、解释并解决客户当前问题。';
+      $('focus-actions').innerHTML = '<span class="pill warn">商业建议暂不显示</span><span class="pill">优先级：处理投诉</span>';
+    } else if (call.status === 'ACTIVE') {
+      $('focus-title').textContent = '客户问题已处理，可以判断下一步';
+      $('focus-copy').textContent = '投诉权威已经解决。系统正在基于资格、产品事实和已批准指导判断是否存在适合的辅助建议。';
+      $('focus-actions').innerHTML = '<span class="pill good">投诉已解决</span><span class="pill blue">等待商业判断</span>';
+    } else {
+      $('focus-title').textContent = '准备接入客户';
+      $('focus-copy').textContent = '点击“执行下一步”开始一通合成客户来电。';
+      $('focus-actions').innerHTML = '';
+    }
+  }
+
+  function renderCustomerSummary(view) {
+    const call = view?.call, customer = view?.customer || {}, complaint = view?.complaint || {}, signal = view?.complaint_signal || {}, sentiment = view?.sentiment || {}, context = view?.commercial_context || {};
+    if (!call) return;
+    $('customer-summary').innerHTML = `<div class="summary-card"><h4>客户</h4><strong>${esc(customer.name || customer.customer_id)}</strong><p>${esc(customer.segment || '—')} · 服务年限 ${esc(customer.tenure_months ?? '—')} 个月</p></div><div class="summary-card"><h4>通话</h4><strong>${esc(call.status)}</strong><p>已接收 ${esc(call.canonical_transcript_version)} 个 transcript 版本</p></div>`;
+    const aspect = Object.entries(sentiment.aspects || {}).map(([name, item]) => `<span class="pill ${item.label === 'NEGATIVE' ? 'bad' : item.label === 'POSITIVE' ? 'good' : ''}">${esc(name)} · ${esc(item.label)}</span>`).join('') || '<span class="empty">暂无</span>';
+    const themes = (view.themes || []).map((theme) => `<span class="pill blue">${esc(theme)}</span>`).join('') || '<span class="empty">暂无</span>';
+    const policy = context.policy?.outcome;
+    $('business-signals').innerHTML = `<div class="reason-card"><h4>客户情绪</h4><p>${aspect}<br><span class="meta">整体：${esc(sentiment.overall_label || '暂无')}</span></p></div><div class="reason-card"><h4>客户正在谈什么</h4><p>${themes}</p></div><div class="reason-card"><h4>投诉状态</h4><p><span class="pill ${complaint.status === 'RESOLVED' ? 'good' : 'warn'}">${esc(complaint.status || '暂无')}</span>${signal.active ? '<span class="pill bad">客户仍在表达不满</span>' : ''}</p></div><div class="reason-card"><h4>商业建议</h4><p>${policy ? `<span class="pill ${policy === 'RECOMMEND' ? 'good' : 'warn'}">${esc(policy)}</span>` : '<span class="empty">暂无</span>'}</p></div>`;
+  }
+
+  function renderTranscript(view) {
+    const segments = view?.transcript || [];
+    $('transcript').innerHTML = segments.length ? segments.map((segment) => `<div class="segment ${segment.speaker === 'CUSTOMER' ? 'customer' : ''}"><div class="speaker">${esc(segment.speaker)} · ${segment.is_final ? '已确认' : '实时中'}</div><p>${esc(segment.text)}</p></div>`).join('') : '<span class="empty">实时 transcript 会显示在这里。</span>';
     $('transcript').scrollTop = $('transcript').scrollHeight;
-    const decisions = view.assistance?.decisions || [];
+  }
+
+  function workflowState(view) {
+    const call = view?.call, segments = view?.transcript || [], complaint = view?.complaint || {}, context = view?.commercial_context || {}, decisions = view?.assistance?.decisions || [], hasPost = Boolean(lastPostCall);
+    return [['接入客户', Boolean(call)], ['了解客户诉求', segments.length > 0], ['先解决当前问题', complaint.status === 'RESOLVED'], ['判断后续建议', Boolean(context.policy)], ['完成服务总结', hasPost || call?.status === 'ENDED']];
+  }
+  function renderWorkflow(view) {
+    const states = workflowState(view), current = states.findIndex(([, done]) => !done);
+    $('workflow').innerHTML = states.map(([name, done], index) => `<div class="workflow-row ${done ? 'done' : index === current ? 'active' : ''}"><div class="workflow-icon">${done ? '✓' : index + 1}</div><div><div class="workflow-name">${name}</div><div class="workflow-detail">${done ? '已完成' : index === current ? '当前阶段' : '等待前置步骤'}</div></div><div class="workflow-state">${done ? '完成' : index === current ? '进行中' : '—'}</div></div>`).join('');
+  }
+
+  function decisionCard(decision, compact = false) {
+    const outcome = decision.business_outcome || '—', cls = String(outcome).toLowerCase();
+    return `<div class="decision ${cls}"><div><span class="pill ${outcomeTone(outcome)}">${esc(outcome === 'SUPPRESS' ? '暂不推荐' : outcome === 'RECOMMEND' ? '建议可用' : outcome)}</span><span class="pill">${esc(decision.delivery_state || '—')}</span>${decision.product_id ? `<span class="pill good">${esc(decision.product_id)}</span>` : ''}</div><p>${esc(decision.generated_text || (outcome === 'SUPPRESS' ? '先处理客户当前问题，不展示额外商业方案。' : '当前没有可展示的辅助文字。'))}</p>${compact ? '' : `<div class="evidence">业务依据：${esc((decision.evidence_refs || []).join(', ') || '无')} · 客服采用与否由人工决定<br><span class="meta">建议状态：${esc(decision.delivery_state)} · 到期时间：${esc(decision.expires_at || '—')}</span></div>`}</div>`;
+  }
+
+  function renderAssistance(view) {
+    const decisions = view?.assistance?.decisions || [];
+    decisions.forEach((decision) => observedDecisions.set(decision.decision_id, decision));
     latestDecision = decisions[decisions.length - 1] || latestDecision;
-    $('assistance').innerHTML = decisions.length ? decisions.map((decision) => {
-      const outcomeClass = String(decision.business_outcome || '').toLowerCase();
-      const outcomeTone = decision.business_outcome === 'RECOMMEND' ? 'good' : decision.business_outcome === 'SUPPRESS' || decision.business_outcome === 'NO_ELIGIBLE_OPTION' ? 'warn' : 'bad';
-      return `<div class="decision ${outcomeClass}"><div><span class="pill ${outcomeTone}">${esc(decision.business_outcome)}</span><span class="pill">${esc(decision.delivery_state)}</span>${decision.product_id ? `<span class="pill good">${esc(decision.product_id)}</span>` : ''}</div><p>${esc(decision.generated_text || '暂无解释文字')}</p><div class="evidence">依据：${esc((decision.evidence_refs || []).join(', ') || '无可用指导')} · 到期：${esc(decision.expires_at)}<br>基于 state v${esc(decision.based_on_state_version)} / transcript v${esc(decision.based_on_transcript_version)} · publication seq ${esc(decision.publication_seq || '—')}</div></div>`;
-    }).join('') : '<span class="empty">还没有提交给客服的辅助建议。注意：投诉未解决时，平台可以分析，但不会给出额外商业推荐。</span>';
-    renderReasoning(view.commercial_context || {});
-    renderDelivery(decisions);
+    $('assistance').innerHTML = decisions.length ? decisions.map((decision) => decisionCard(decision)).join('') : '<span class="empty">当前没有需要客服采用的辅助建议。系统会在条件满足时显示；投诉未解决时，重点是处理客户问题。</span>';
   }
 
-  function renderReasoning(context) {
-    if (!Object.keys(context).length) { $('reasoning').innerHTML = '<span class="empty">平台还没有形成商业判断。</span>'; return; }
-    const propensity = context.propensity || {};
-    const eligibility = context.eligibility || {};
-    const policy = context.policy || {};
-    const product = context.product_facts;
-    const guidance = context.guidance;
-    const blocking = (policy.blocking_reasons || []).length ? `<ul style="margin:7px 0 0;padding-left:18px">${policy.blocking_reasons.map((reason) => `<li>${esc(reason)}</li>`).join('')}</ul>` : '<span class="pill good">没有阻断原因</span>';
-    $('reasoning').innerHTML = `<div class="reason-card"><h4>Propensity · 可能相关</h4><p>${propensity.score === null || propensity.score === undefined ? '不可用' : `<strong>${esc(propensity.score)}</strong> · ${esc(propensity.model)} / ${esc(propensity.version)}`}<br><span class="meta">预测不等于授权</span></p></div><div class="reason-grid"><div class="reason-card"><h4>Eligibility · 是否能提供</h4><p>${esc((eligibility.eligible_product_ids || []).join(', ') || '没有符合资格的产品')}<br><span class="meta">${esc(eligibility.reason || '—')}</span></p></div><div class="reason-card"><h4>Policy · 此刻是否允许</h4><p><span class="pill ${policy.outcome === 'RECOMMEND' ? 'good' : 'warn'}">${esc(policy.outcome || '—')}</span>${blocking}</p></div><div class="reason-card"><h4>Product facts · 结构化事实</h4><p>${product ? `${esc(product.name)} · ${esc(product.currency)} ${esc(product.monthly_fee)} / 月<br><span class="meta">${esc((product.benefits || []).join(' · ') || '—')}</span>` : '当前没有向客服展示产品事实'}</p></div><div class="reason-card"><h4>Guidance · 指导依据</h4><p>${guidance ? `${esc(guidance.title)}<br><span class="meta">${esc(guidance.source)} · ${esc(guidance.version)} · ${esc(guidance.purpose)}</span>` : '当前没有可用指导'}</p></div></div>`;
+  function renderSupervisor(view) {
+    const call = view?.call, complaint = view?.complaint || {}, signal = view?.complaint_signal || {}, sentiment = view?.sentiment || {}, context = view?.commercial_context || {}, record = lastPostCall?.record;
+    if (!call) return;
+    const decisionList = [...observedDecisions.values()];
+    $('supervisor-summary').innerHTML = `<dl class="kv"><dt>客户问题</dt><dd>${complaint.status === 'RESOLVED' ? '费用问题已通过业务事件标记为解决' : '费用问题仍需处理'}</dd><dt>识别到的信号</dt><dd>${esc((view.themes || []).join('、') || '暂无')} · ${esc(sentiment.overall_label || '暂无')} ${signal.active ? '· 当前仍有投诉信号' : ''}</dd><dt>实时建议</dt><dd>${decisionList.length ? decisionList.map((d) => `<span class="pill ${outcomeTone(d.business_outcome)}">${esc(d.business_outcome)}</span>`).join('') : '暂无'}</dd><dt>服务状态</dt><dd>${esc(call.status)}${record ? ' · 已生成 post-call 记录' : ''}</dd></dl>`;
+    $('supervisor-controls').innerHTML = `<div class="reason-card"><h4>控制原则</h4><p>高 propensity 不能绕过投诉门控；AI 不会自动替客服解决投诉或执行销售动作。</p></div><div class="reason-card" style="margin-top:9px"><h4>本次需要关注</h4><p>${complaint.status !== 'RESOLVED' || signal.active ? '确认客服优先承接客户费用问题。' : context.policy?.outcome === 'RECOMMEND' ? '确认推荐是基于当前事实，并由客服决定是否采用。' : call.status === 'ENDED' ? '查看 post-call 证据是否完整。' : '等待业务流程继续。'}</p></div>`;
+    $('decision-history').innerHTML = decisionList.length ? decisionList.map((decision) => decisionCard(decision)).join('') : '<span class="empty">建议产生后会在这里保留业务结果和生命周期。</span>';
+    if (!record) { $('post-result').innerHTML = '<span class="empty">结束通话并执行 post-call 后，这里会显示 interaction record。</span>'; return; }
+    $('post-result').innerHTML = `<div><span class="pill ${lastPostCall.inserted ? 'good' : 'blue'}">${lastPostCall.inserted ? '记录已写入' : '幂等重试：未重复写入'}</span></div><dl class="kv" style="margin-top:12px"><dt>Summary</dt><dd>${esc(record.summary)}</dd><dt>情绪</dt><dd>${esc(record.overall_sentiment)} · ${esc(JSON.stringify(record.aspect_sentiment || {}))}</dd><dt>主题</dt><dd>${esc((record.themes || []).join('、') || '暂无')}</dd><dt>证据</dt><dd>${esc((record.evidence_refs || []).join(', ') || '—')}</dd><dt>Snapshot</dt><dd>${esc(record.transcript_snapshot_id)}</dd></dl>`;
   }
 
-  const PIPELINE = [['call_started', '建立通话'], ['transcript_accepted', '接收 transcript'], ['transcript_derivation', '情绪、主题与投诉信号'], ['propensity', '相关性预测'], ['eligibility', '资格判断'], ['commercial_policy', '商业政策'], ['guidance_retrieval', '指导检索'], ['llm_explanation', '生成辅助文字'], ['explanation_validation', '解释校验'], ['commercial_publication', '发布与生命周期'], ['post_call_enrichment', 'Post-call 记录']];
-  function renderPipeline(traces = []) {
-    const latest = {};
-    traces.forEach((trace) => { latest[trace.stage] = trace; });
-    $('pipeline').innerHTML = PIPELINE.map(([stage, label]) => {
-      const trace = latest[stage];
-      if (!trace) return `<div class="stage idle"><div class="stage-name">${label}</div><div class="stage-status meta">等待本阶段</div></div>`;
-      const status = trace.status || '—';
-      const tone = status === 'SUCCEEDED' ? 'ok' : status === 'UNAVAILABLE' || status === 'INVALIDATED' ? 'warn' : status === 'FAILED' ? 'bad' : 'idle';
-      return `<div class="stage ${tone}"><div class="stage-name">${label}</div><div class="stage-status"><span class="pill ${tone === 'ok' ? 'good' : tone === 'bad' ? 'bad' : 'warn'}">${esc(status)}</span></div><div class="stage-detail">${esc(trace.output_ref || trace.error_code || trace.model_version || '已记录')}<br>${trace.model_version ? `model ${esc(trace.model_version)}` : ''}</div></div>`;
-    }).join('');
-  }
-
-  function renderDelivery(decisions) {
-    const visible = decisions.length ? decisions.map((decision) => `<div style="margin-bottom:8px"><span class="pill">${esc(decision.business_outcome)}</span><span class="pill ${decision.delivery_state === 'UI_ACKNOWLEDGED' ? 'good' : 'blue'}">${esc(decision.delivery_state)}</span><span class="meta">尝试 ${esc(decision.delivery_attempts || 0)} 次</span></div>`).join('') : '<span class="empty">尚未产生交付事件。</span>';
-    $('delivery').innerHTML = `${visible}<div class="meta" style="margin-top:9px">server published 和 UI acknowledged 会在剧本后半段分别出现；通话结束后实时建议会被撤回，但证据仍保留在 trace 中。</div>`;
-  }
-
-  function renderPost(result) {
-    if (!result) return;
-    lastPostCall = result;
-    const record = result.record || {};
-    $('post-result').innerHTML = `<div><span class="pill ${result.inserted ? 'good' : 'blue'}">${result.inserted ? '新记录已写入' : '幂等重试：未重复写入'}</span></div><dl class="kv" style="margin-top:12px"><dt>Interaction</dt><dd>${esc(record.interaction_id)}</dd><dt>Transcript snapshot</dt><dd>${esc(record.transcript_snapshot_id)}</dd><dt>Summary</dt><dd>${esc(record.summary)}</dd><dt>Sentiment</dt><dd>${esc(record.overall_sentiment)} · ${esc(JSON.stringify(record.aspect_sentiment || {}))}</dd><dt>Themes</dt><dd>${esc((record.themes || []).join('、') || '暂无')}</dd><dt>Evidence</dt><dd>${esc((record.evidence_refs || []).join(', ') || '—')}</dd></dl><details><summary>查看 post-call 返回值</summary><div class="json">${esc(JSON.stringify(result, null, 2))}</div></details>`;
-  }
-
-  function renderTraces(traces) {
-    renderPipeline(traces || []);
-    if (!traces || !traces.length) { $('traces').innerHTML = '<span class="empty">暂无 trace。</span>'; return; }
+  function renderEvidence(view, traces = []) {
+    if (!view?.call) return;
+    const call = view.call, context = view.commercial_context || {}, decisions = view.assistance?.decisions || [];
+    $('evidence-overview').innerHTML = `<div class="reason-grid"><div class="reason-card"><h4>State lineage</h4><p>state v${esc(call.state_version)} · transcript v${esc(call.canonical_transcript_version)} · derived v${esc(call.derived_transcript_version)} · UI seq ${esc(call.ui_seq)}</p></div><div class="reason-card"><h4>Commercial context</h4><p>propensity ${esc(context.propensity?.score ?? '—')} · eligibility ${esc((context.eligibility?.eligible_product_ids || []).join(', ') || '—')} · policy ${esc(context.policy?.outcome || '—')}</p></div><div class="reason-card"><h4>Decision lifecycle</h4><p>${decisions.length ? decisions.map((d) => `${esc(d.business_outcome)} → ${esc(d.delivery_state)}`).join('<br>') : '当前无可见建议；历史建议可在 Supervisor 视图查看。'}</p></div><div class="reason-card"><h4>Evidence</h4><p>${esc((decisions.flatMap((d) => d.evidence_refs || [])).join(', ') || context.guidance?.guidance_id || '—')}</p></div></div>`;
+    const latest = {}; (traces || []).forEach((trace) => { latest[trace.stage] = trace; });
+    $('pipeline').innerHTML = PIPELINE.map(([stage, label]) => { const trace = latest[stage]; if (!trace) return `<div class="stage idle"><div class="stage-name">${label}</div><div class="stage-status meta">等待本阶段</div></div>`; const status = trace.status || '—', tone = status === 'SUCCEEDED' ? 'ok' : status === 'FAILED' ? 'bad' : 'warn'; return `<div class="stage ${tone}"><div class="stage-name">${label}</div><div class="stage-status"><span class="pill ${tone === 'ok' ? 'good' : tone === 'bad' ? 'bad' : 'warn'}">${esc(status)}</span></div><div class="stage-detail">${esc(trace.output_ref || trace.error_code || trace.model_version || '已记录')}<br>${trace.model_version ? `model ${esc(trace.model_version)}` : ''}</div></div>`; }).join('');
+    if (!traces.length) { $('traces').innerHTML = '<span class="empty">暂无 trace。</span>'; return; }
     $('traces').innerHTML = `<table><thead><tr><th>阶段</th><th>状态</th><th>输入 / 输出</th><th>模型 / 错误</th></tr></thead><tbody>${traces.map((trace) => `<tr><td>${esc(trace.stage)}</td><td><span class="pill ${trace.status === 'SUCCEEDED' ? 'good' : trace.status === 'FAILED' ? 'bad' : 'warn'}">${esc(trace.status)}</span></td><td>${esc(trace.input_ref || '—')}<br>${esc(trace.output_ref || '—')}</td><td>${esc(trace.model_version || '—')}<br>${esc(trace.error_code || '—')}</td></tr>`).join('')}</tbody></table>`;
   }
 
-  async function refresh() {
-    if (!callId) return;
-    const [view, traces] = await Promise.all([api(`/api/calls/${callId}`), api(`/api/calls/${callId}/traces`)]);
-    renderView(view);
-    renderTraces(traces);
-  }
+  function renderView(view, traces = []) { if (!view?.call) return; lastView = view; renderCallBar(view); renderAgentFocus(view); renderCustomerSummary(view); renderTranscript(view); renderWorkflow(view); renderAssistance(view); renderSupervisor(view); renderEvidence(view, traces); }
+  async function refresh() { if (!callId) return; const [view, traces] = await Promise.all([api(`/api/calls/${callId}`), api(`/api/calls/${callId}/traces`)]); renderView(view, traces); }
 
   async function executeStep(step) {
     if (!step) return null;
-    const action = step.action;
-    if (action === 'start') {
-      const view = await api('/api/calls', { method: 'POST', body: JSON.stringify({ customer_id: scenario.customer.customer_id }) });
-      callId = view.call.call_id;
-      latestDecision = null;
-      lastPostCall = null;
-      $('post-result').innerHTML = '<span class="empty">通话还没有结束。</span>';
-      return view;
-    }
+    if (step.action === 'start') { const view = await api('/api/calls', {method:'POST', body:JSON.stringify({customer_id:scenario.customer.customer_id})}); callId = view.call.call_id; latestDecision = null; observedDecisions.clear(); lastPostCall = null; return view; }
     if (!callId) throw new Error('请先建立通话。');
-    if (action === 'transcript') return api(`/api/calls/${callId}/transcript`, { method: 'POST', body: JSON.stringify({ segment_id: step.segment_id, revision: 1, is_final: true, speaker: 'CUSTOMER', text: step.text }) });
-    if (action === 'commercial') return api(`/api/calls/${callId}/decisions/commercial`, { method: 'POST' });
-    if (action === 'resolve') return api(`/api/calls/${callId}/complaint/resolve`, { method: 'POST' });
-    if (action === 'server-published') {
-      if (!latestDecision) throw new Error('当前没有可交付的辅助建议。');
-      return api(`/api/calls/${callId}/decisions/${latestDecision.decision_id}/server-published`, { method: 'POST' });
-    }
-    if (action === 'ack') {
-      if (!latestDecision) throw new Error('当前没有可确认的辅助建议。');
-      return api(`/api/calls/${callId}/decisions/${latestDecision.decision_id}/ack`, { method: 'POST' });
-    }
-    if (action === 'end') return api(`/api/calls/${callId}/end`, { method: 'POST' });
-    if (action === 'post-call') {
-      const result = await api(`/api/calls/${callId}/post-call`, { method: 'POST' });
-      renderPost(result);
-      return result;
-    }
-    throw new Error(`未知的业务动作：${action}`);
+    if (step.action === 'transcript') return api(`/api/calls/${callId}/transcript`, {method:'POST', body:JSON.stringify({segment_id:step.segment_id, revision:1, is_final:true, speaker:'CUSTOMER', text:step.text})});
+    if (step.action === 'commercial') return api(`/api/calls/${callId}/decisions/commercial`, {method:'POST'});
+    if (step.action === 'resolve') return api(`/api/calls/${callId}/complaint/resolve`, {method:'POST'});
+    if (step.action === 'server-published') { if (!latestDecision) throw new Error('当前没有可交付的辅助建议。'); return api(`/api/calls/${callId}/decisions/${latestDecision.decision_id}/server-published`, {method:'POST'}); }
+    if (step.action === 'ack') { if (!latestDecision) throw new Error('当前没有可确认的辅助建议。'); return api(`/api/calls/${callId}/decisions/${latestDecision.decision_id}/ack`, {method:'POST'}); }
+    if (step.action === 'end') return api(`/api/calls/${callId}/end`, {method:'POST'});
+    if (step.action === 'post-call') { const result = await api(`/api/calls/${callId}/post-call`, {method:'POST'}); lastPostCall = result; return result; }
+    throw new Error(`未知业务动作：${step.action}`);
   }
-
-  async function runNext() {
-    if (busy || !scenario || stepIndex >= scenario.steps.length) return;
-    busy = true;
-    renderScenario();
-    const step = scenario.steps[stepIndex];
-    setStatus(`正在执行：${step.label}`);
-    try {
-      const result = await executeStep(step);
-      if (result && result.call) renderView(result);
-      stepIndex += 1;
-      await refresh();
-      if (step.action === 'post-call') renderPost(result);
-      setStatus(`已完成：${step.label}`);
-    } catch (error) {
-      setStatus(error.message, true);
-    } finally {
-      busy = false;
-      renderScenario();
-    }
-  }
-
+  async function runNext() { if (busy || !scenario || !currentStep()) return; busy = true; renderProgress(); const step = currentStep(); setStatus(`正在执行：${step.label}`); try { const result = await executeStep(step); stepIndex += 1; await refresh(); setStatus(`已完成：${step.label}`); } catch (error) { setStatus(error.message, true); } finally { busy = false; renderProgress(); } }
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  async function runAll() {
-    if (busy) return;
-    busy = true;
-    renderScenario();
-    try {
-      while (scenario && stepIndex < scenario.steps.length) {
-        const step = scenario.steps[stepIndex];
-        setStatus(`正在执行：${step.label}`);
-        const result = await executeStep(step);
-        if (result && result.call) renderView(result);
-        stepIndex += 1;
-        await refresh();
-        if (step.action === 'post-call') renderPost(result);
-        renderScenario();
-        await wait(180);
-      }
-      setStatus('完整业务剧本已完成。现在可以从证据面板回看整条链路。');
-    } catch (error) {
-      setStatus(error.message, true);
-    } finally {
-      busy = false;
-      renderScenario();
-    }
-  }
+  async function runAll() { if (busy) return; busy = true; renderProgress(); try { while (scenario && currentStep()) { const step = currentStep(); setStatus(`正在执行：${step.label}`); await executeStep(step); stepIndex += 1; await refresh(); renderProgress(); await wait(150); } setStatus('完整业务链已完成，可以切换到 Supervisor 复盘或技术证据。'); } catch (error) { setStatus(error.message, true); } finally { busy = false; renderProgress(); } }
 
-  $('next').onclick = () => runNext();
-  $('run-all').onclick = () => runAll();
-  $('reset').onclick = () => window.location.reload();
-
-  async function boot() {
-    try {
-      scenario = await api('/api/demo/scenario');
-      setStatus('剧本已加载，准备开始。');
-      renderScenario();
-      renderPipeline([]);
-    } catch (error) {
-      setStatus(error.message, true);
-      $('steps').innerHTML = '<div class="empty">无法加载业务剧本。请确认本地 API 正在运行。</div>';
-      renderPipeline([]);
-    }
-  }
+  document.querySelectorAll('[data-role]').forEach((button) => button.addEventListener('click', () => { activeRole = button.dataset.role; document.body.dataset.role = activeRole; document.querySelectorAll('.role').forEach((item) => item.classList.toggle('active', item.dataset.role === activeRole)); if (lastView) renderView(lastView, window.lastTraces || []); }));
+  $('next').onclick = runNext; $('run-all').onclick = runAll; $('reset').onclick = () => window.location.reload();
+  async function boot() { try { scenario = await api('/api/demo/scenario'); renderProgress(); setStatus('剧本已加载，准备开始。'); } catch (error) { setStatus(error.message, true); $('next-event').textContent = '无法加载演示剧本，请确认本地 API 正在运行。'; } }
+  window.lastTraces = [];
+  const originalRenderView = renderView;
+  renderView = function(view, traces = []) { window.lastTraces = traces; originalRenderView(view, traces); };
   boot();
 </script>
 </body>

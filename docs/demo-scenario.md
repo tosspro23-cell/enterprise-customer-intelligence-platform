@@ -13,4 +13,6 @@ The Workbench uses customer `C001` and a synthetic call. It is designed to be re
 9. **Post-call 分析** — bind the final transcript snapshot to a summary, themes, sentiment, and evidence refs.
 10. **重试与幂等** — run the same post-call operation again; it returns the existing record without duplicating it.
 
-The guided UI shows the business state beside the underlying evidence: canonical transcript and derived versions, sentiment and themes, complaint authority, propensity, eligibility, policy blocking reasons, guidance provenance, decision lifecycle, and trace stages. This makes the reason for `SUPPRESS` and the later `RECOMMEND` visible without requiring the viewer to read the implementation first.
+The default **客服视图** shows the business state in action language: what the customer needs now, what the agent should do next, and whether an assistant suggestion is available. **Supervisor 复盘** adds service outcome, decision history, post-call summary and evidence coverage. **技术证据** keeps canonical/derived versions, dependency snapshots, lifecycle sequence and trace stages available for implementation review without making them the primary operating surface.
+
+This keeps the implementation contract's evidence requirement while preserving the architecture boundary: a standalone Workbench is a reference/demo surface, while production suggestions would normally be embedded in the existing agent desktop/widget.

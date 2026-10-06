@@ -19,7 +19,7 @@ pip install -e '.[dev]'
 uvicorn backend.app:app --reload --host 127.0.0.1 --port 8765
 ```
 
-Open <http://127.0.0.1:8765>. The Workbench starts with a guided business script rather than a collection of disconnected API buttons. Use “Run complete scenario” for the first walkthrough, or advance one step at a time to inspect why a recommendation is suppressed and later released. API documentation is available at `/docs`.
+Open <http://127.0.0.1:8765>. The Workbench opens in a customer-service view: the main question is what the customer needs now and what the agent should do next. Switch to “Supervisor review” for service outcome/post-call review or “Technical evidence” for versions, dependencies, lifecycle and traces. Use “Run complete scenario” for the first walkthrough, or advance one step at a time to inspect why a recommendation is suppressed and later released. API documentation is available at `/docs`.
 
 If `frontend/index.html` is opened directly as a local file, the page can still reach a running local API through its explicit `http://127.0.0.1:8765` base URL. The HTTP URL above is the recommended entry point because it keeps the browser and API origin together.
 
