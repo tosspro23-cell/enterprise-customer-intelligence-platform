@@ -1,29 +1,29 @@
 {
   "scenario_id": "c001-savings-followup",
-  "title": "问题解决后的储蓄咨询",
-  "short_title": "储蓄咨询",
-  "category": "产品信息与后续建议",
-  "purpose": "展示客服如何先确认当前服务问题已完成，再给客户提供有事实依据的产品说明。",
+  "title": "Savings Consultation After Issue Resolution",
+  "short_title": "Savings consultation",
+  "category": "Product information and follow-up assistance",
+  "purpose": "Show how an agent confirms the current service issue is complete before providing fact-based product information.",
   "customer": {
     "customer_id": "C001",
     "name": "Sarah Chen",
     "segment": "PERSONAL"
   },
   "steps": [
-    {"id":"start","label":"接入后续咨询","actor":"平台","description":"建立客户和当前通话的业务上下文。","action":"start"},
-    {"id":"customer-greeting","label":"客户说明咨询目标","actor":"客户","speaker":"CUSTOMER","text":"Hi, thanks for helping me with my account last time. I have a question about automatic savings.","description":"客户先说明咨询目标；服务正面反馈和 savings 主题同时进入 transcript。","action":"transcript","segment_id":"s-greeting"},
-    {"id":"agent-opens","label":"客服邀请客户说明","actor":"客服","speaker":"AGENT","text":"I’m happy to help. What would you like to understand about the savings rules?","description":"客服让客户先明确目标，辅助分析等待更完整的上下文。","action":"transcript","segment_id":"s-agent-open"},
-    {"id":"customer-goal","label":"客户说明资金目标","actor":"客户","speaker":"CUSTOMER","text":"I’m building an emergency fund, and I’d like something simple that I can adjust when my income changes.","description":"客户补充个人目标，平台保留 savings 主题并等待业务状态确认。","action":"transcript","segment_id":"s-goal"},
-    {"id":"agent-clarifies","label":"客服确认产品问题范围","actor":"客服","speaker":"AGENT","text":"So you want an automatic rule that is easy to change, rather than a fixed commitment. Is that right?","description":"客服复述客户目标，确保后续辅助与当前问题一致。","action":"transcript","segment_id":"s-agent-clarify"},
-    {"id":"customer-confirms","label":"客户确认需求","actor":"客户","speaker":"CUSTOMER","text":"Exactly. I want to know how the rule works, what it costs each month, and how I can stop it if I need to.","description":"客户明确询问产品事实和费用，平台可以准备检索批准的指导内容。","action":"transcript","segment_id":"s-confirm-goal"},
-    {"id":"resolve","label":"确认当前服务问题已完成","actor":"客服业务流程","description":"只有业务流程事件可以改变投诉权威，客户的积极表达本身不会自动解决问题。","action":"resolve"},
-    {"id":"agent-checks-context","label":"客服确认进入产品说明","actor":"客服","speaker":"AGENT","text":"I’ve confirmed there isn’t an open service issue to resolve on this call. I’ll check the approved savings details for you now.","description":"当前服务状态已由业务流程确认，客服明确告诉客户即将查看产品事实。","action":"transcript","segment_id":"s-agent-context"},
-    {"id":"customer-asks-details","label":"客户提出具体问题","actor":"客户","speaker":"CUSTOMER","text":"Yes, please tell me the monthly cost and what I need to do to get started.","description":"客户的问题已经具体到产品费用和开始条件，触发后续辅助判断。","action":"transcript","segment_id":"s-details"},
-    {"id":"recommend","label":"展示有依据的产品辅助","actor":"平台","description":"资格、产品事实、指导和解释校验通过后，客服才看到可选的后续方案。","action":"commercial"},
-    {"id":"server-published","label":"建议送达客服桌面","actor":"交付层","description":"记录服务端完成发布。","action":"server-published"},
-    {"id":"ui-ack","label":"客服桌面确认显示","actor":"客服工作台","description":"记录浏览器已经应用当前完整辅助快照。","action":"ack"},
-    {"id":"end","label":"结束通话","actor":"客服平台","description":"结束实时会话并撤回实时辅助。","action":"end"},
-    {"id":"post-call","label":"生成通话总结","actor":"分析 worker","description":"保存客户诉求、情绪、主题和 evidence refs。","action":"post-call"},
-    {"id":"idempotency","label":"确认重复执行安全","actor":"分析 worker","description":"再次执行同一 post-call job，不产生重复记录。","action":"post-call"}
+    {"id":"start","label":"Start follow-up consultation","actor":"Platform","description":"Establish the customer and current call business context.","action":"start"},
+    {"id":"customer-greeting","label":"Customer explains the consultation goal","actor":"Customer","speaker":"CUSTOMER","text":"Hi, thanks for helping me with my account last time. I have a question about automatic savings.","description":"The customer states the goal; positive service feedback and the savings theme enter the transcript together.","action":"transcript","segment_id":"s-greeting"},
+    {"id":"agent-opens","label":"Agent invites the customer to explain","actor":"Agent","speaker":"AGENT","text":"I’m happy to help. What would you like to understand about the savings rules?","description":"The agent invites a clear goal while assistance waits for more context.","action":"transcript","segment_id":"s-agent-open"},
+    {"id":"customer-goal","label":"Customer explains the savings goal","actor":"Customer","speaker":"CUSTOMER","text":"I’m building an emergency fund, and I’d like something simple that I can adjust when my income changes.","description":"The customer adds a personal goal; the platform retains the savings theme while waiting for business-state confirmation.","action":"transcript","segment_id":"s-goal"},
+    {"id":"agent-clarifies","label":"Agent clarifies the product question","actor":"Agent","speaker":"AGENT","text":"So you want an automatic rule that is easy to change, rather than a fixed commitment. Is that right?","description":"The agent restates the goal so any follow-up assistance stays aligned with the conversation.","action":"transcript","segment_id":"s-agent-clarify"},
+    {"id":"customer-confirms","label":"Customer confirms the need","actor":"Customer","speaker":"CUSTOMER","text":"Exactly. I want to know how the rule works, what it costs each month, and how I can stop it if I need to.","description":"The customer asks for product facts and cost; the platform can prepare approved guidance retrieval.","action":"transcript","segment_id":"s-confirm-goal"},
+    {"id":"resolve","label":"Confirm the service issue is complete","actor":"Business workflow","description":"Only a business workflow event can change complaint authority; a positive customer statement does not resolve it automatically.","action":"resolve"},
+    {"id":"agent-checks-context","label":"Agent moves into product information","actor":"Agent","speaker":"AGENT","text":"I’ve confirmed there isn’t an open service issue to resolve on this call. I’ll check the approved savings details for you now.","description":"The business workflow confirms the service state and the agent explains that approved product facts will be checked.","action":"transcript","segment_id":"s-agent-context"},
+    {"id":"customer-asks-details","label":"Customer asks a specific question","actor":"Customer","speaker":"CUSTOMER","text":"Yes, please tell me the monthly cost and what I need to do to get started.","description":"The question is specific to product cost and enrollment conditions, triggering the follow-up assistance assessment.","action":"transcript","segment_id":"s-details"},
+    {"id":"recommend","label":"Show evidence-backed product assistance","actor":"Platform","description":"The agent sees a follow-up option only after eligibility, product facts, guidance, and explanation checks pass.","action":"commercial"},
+    {"id":"server-published","label":"Deliver assistance to the agent desktop","actor":"Delivery layer","description":"Record server publication.","action":"server-published"},
+    {"id":"ui-ack","label":"Agent desktop acknowledges the display","actor":"Agent desktop","description":"Record that the browser applied the complete assistance snapshot.","action":"ack"},
+    {"id":"end","label":"End the call","actor":"Call platform","description":"End the live session and withdraw real-time assistance.","action":"end"},
+    {"id":"post-call","label":"Generate the call summary","actor":"Analysis worker","description":"Save the customer request, sentiment, themes, and evidence references.","action":"post-call"},
+    {"id":"idempotency","label":"Verify retry safety","actor":"Analysis worker","description":"Run the same post-call job again without creating a duplicate record.","action":"post-call"}
   ]
 }
