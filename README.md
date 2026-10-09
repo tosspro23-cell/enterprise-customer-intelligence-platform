@@ -52,3 +52,7 @@ The default run is contract evidence, not a production deployment, a scale bench
 The local reference implementation deliberately leaves telephony, enterprise identity, cloud search, production data platforms, and distributed event infrastructure behind adapter interfaces. Those are deployment choices for a later integration path; the business invariants are exercised locally first.
 
 See [docs/architecture.md](docs/architecture.md), [docs/data-contracts.md](docs/data-contracts.md), and [docs/demo-scenario.md](docs/demo-scenario.md).
+
+## AWS demo deployment
+
+The first cloud deployment is intentionally a single-host demo target: Docker on a `t3.micro` EC2 instance, an encrypted EBS data volume for SQLite, ECR for the image, CloudWatch Logs, and Systems Manager access. It preserves the local reference-slice semantics while providing a stable URL for synthetic-data demonstrations. It is not a production deployment. See [docs/aws-deployment-plan.md](docs/aws-deployment-plan.md) and [infra/aws/README.md](infra/aws/README.md) for the deployment and teardown procedure.

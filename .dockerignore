@@ -1,0 +1,9 @@
+.git
+.github
+.venv
+__pycache__
+*.py[cod]
+*.db
+tests
+infra/aws/.venv
+infra/aws/cdk.out
