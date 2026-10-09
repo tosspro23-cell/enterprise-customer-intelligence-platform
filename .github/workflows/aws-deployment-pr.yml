@@ -1,0 +1,39 @@
+name: AWS deployment PR validation
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "infra/aws/**"
+      - "docs/aws-deployment-plan.md"
+      - "backend/**"
+      - "frontend/**"
+      - "data/**"
+      - "pyproject.toml"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install application test dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Run deterministic test suite
+        run: pytest -q
+      - name: Build container
+        run: docker build --platform linux/amd64 --tag customer-intelligence-platform:pr .
+      - name: Install CDK dependencies
+        run: python -m pip install -r infra/aws/requirements.txt
+      - name: Install CDK CLI
+        run: npm install --global aws-cdk@2
+      - name: Synthesize CloudFormation
+        working-directory: infra/aws
+        run: cdk synth --output cdk.out
