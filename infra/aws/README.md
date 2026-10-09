@@ -2,7 +2,8 @@
 
 This directory contains the first cloud deployment foundation for the local
 reference slice. It intentionally preserves the current application contract:
-one FastAPI process, one container, and SQLite on an encrypted EBS volume.
+one FastAPI process, one container, and SQLite in a host runtime directory on
+an encrypted EBS root volume.
 
 It is suitable for synthetic-data demos and cloud testing. It is not a
 production topology. The application still uses the demo principal model and

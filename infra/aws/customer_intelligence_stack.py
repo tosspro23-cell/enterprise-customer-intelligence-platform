@@ -138,15 +138,15 @@ class CustomerIntelligenceDemoStack(Stack):
             "set -euxo pipefail",
             "dnf install -y docker",
             "systemctl enable --now docker",
-            "install -d -o 10001 -g 10001 /var/lib/customer-intelligence/data",
+            "install -d -o 10001 -g 10001 /var/lib/customer-intelligence",
             f"aws ecr get-login-password --region {cdk_aws_region()} | docker login --username AWS --password-stdin {registry_host}",
             f"docker pull {image_uri}",
             "docker rm --force customer-intelligence || true",
             (
                 "docker run --detach --name customer-intelligence --restart unless-stopped "
                 "--publish 80:8765 "
-                "--env DATABASE_PATH=/app/data/platform.db "
-                "--volume /var/lib/customer-intelligence/data:/app/data "
+                "--env DATABASE_PATH=/var/lib/customer-intelligence/platform.db "
+                "--volume /var/lib/customer-intelligence:/var/lib/customer-intelligence "
                 f"--log-driver awslogs --log-opt awslogs-region={cdk_aws_region()} "
                 f"--log-opt awslogs-group={log_group.log_group_name} "
                 "--log-opt awslogs-stream=customer-intelligence "

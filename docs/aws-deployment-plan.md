@@ -3,7 +3,8 @@
 ## Decision for the first cloud increment
 
 Use a single Amazon EC2 `t3.micro` host running the existing FastAPI service
-in Docker. Store the SQLite database on a 20 GiB encrypted gp3 EBS volume. Use
+in Docker. Store the SQLite database under a host runtime directory on the
+instance's 20 GiB encrypted gp3 root EBS volume. Use
 Amazon ECR for the image, CloudWatch Logs for application output, and Systems
 Manager Session Manager for administrative access.
 
@@ -35,7 +36,8 @@ real customer data because:
 - the browser uses the reference demo principal model rather than enterprise
   identity;
 - the first endpoint is HTTP-only and should be CIDR-restricted;
-- SQLite is durable on one host but is not safe for horizontal scaling;
+- SQLite is durable across container restarts on one host but is not safe for
+  horizontal scaling, instance replacement, or deletion;
 - there is no managed failover, backup policy, or disaster-recovery runbook;
 - deployment is manual and approval-gated rather than an unattended pipeline.
 
@@ -68,5 +70,6 @@ to ECS/Fargate or App Runner.
 - The EC2 security group has only the explicit HTTP CIDR and no SSH rule.
 - The instance role grants Session Manager, ECR read, and scoped CloudWatch log
   write permissions.
-- The SQLite path is on the mounted EBS data directory.
+- The SQLite path is on the host runtime directory, while read-only scenario
+  fixtures remain visible under the image's `/app/data` path.
 - The README documents deployment, teardown, and the non-production boundary.
