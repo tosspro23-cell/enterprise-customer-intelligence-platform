@@ -68,19 +68,58 @@ The stack outputs the temporary HTTP URL, instance ID, and CloudWatch log
 group. The host is managed through Systems Manager; no inbound SSH rule or SSH
 key is created.
 
+Treat a successful CloudFormation deployment as infrastructure creation, not
+as proof that the demo is ready. Complete this smoke check before sharing the
+URL:
+
+```bash
+export DEMO_URL="<DemoUrl output>"
+curl --fail "$DEMO_URL/api/health"
+curl --fail "$DEMO_URL/api/demo/scenarios" \
+  | python3 -c 'import json, sys; assert len(json.load(sys.stdin)["scenarios"]) == 3'
+aws ssm describe-instance-information --region "$AWS_REGION"
+```
+
+The smoke check confirms the application and fixtures are available, but the
+live account test must still verify the EBS-backed SQLite path, CloudWatch log
+delivery, and the actual Security Group CIDR.
+
+## Update an existing host
+
+EC2 user data is an initial bootstrap mechanism. It is not the image rollout
+mechanism. After pushing a new commit-tagged image to ECR, use the checked-in
+SSM update script so the existing host pulls and replaces the container while
+preserving the runtime directory:
+
+```bash
+export INSTANCE_ID="<InstanceId output>"
+export LOG_GROUP_NAME="<LogGroupName output>"
+export IMAGE_TAG="$(git rev-parse --short HEAD)"
+export REPOSITORY_URI="<RepositoryUri output>"
+./infra/aws/update-demo.sh
+```
+
+The script reports the remote command status and stdout/stderr. Re-run the
+smoke check after every update; do not infer a successful image rollout from a
+successful `aws ssm send-command` request alone.
+
 ## Teardown and cost control
 
 To stop compute charges after a demo, destroy the demo stack. The ECR
 repository is intentionally retained by the repository stack so images are not
-deleted accidentally.
+deleted accidentally. Destroying the demo stack deletes the instance, its root
+EBS volume, the runtime SQLite database, and the demo log group.
 
 ```bash
 cdk destroy CustomerIntelligenceDemo
 ```
 
 Delete the repository stack only after explicitly deciding that the image
-history is no longer needed. Review AWS Billing and Free Tier usage after each
-deployment; credits are a budget, not proof that a resource is cost-free.
+history is no longer needed. The repository has a retain policy and must be
+cleaned up separately if its images should be removed. A CDK bootstrap stack
+may also remain for other CDK applications; do not delete it blindly. Review
+AWS Billing and Free Tier usage after each deployment; credits are a budget,
+not proof that a resource is cost-free.
 
 ## Next cloud increments
 

@@ -56,15 +56,17 @@ only inbound rule is the explicitly supplied HTTP CIDR for the demo endpoint.
 
 ## Promotion path
 
-The first PR adds container and CDK foundations only. After a successful cloud
-smoke test, the next PR should introduce a persistence abstraction that can be
-backed by DynamoDB or Aurora PostgreSQL, then add a real authentication
-boundary and TLS. Only after those contracts are tested should the runtime move
-to ECS/Fargate or App Runner.
+The first PR adds container and CDK foundations plus an explicit SSM update
+path. After a successful cloud smoke test, the next PR should introduce a
+persistence abstraction that can be backed by DynamoDB or Aurora PostgreSQL,
+then add a real authentication boundary and TLS. Only after those contracts
+are tested should the runtime move to ECS/Fargate or App Runner.
 
 ## Operational acceptance for this PR
 
 - `docker build` succeeds from a clean checkout.
+- The image starts with the deployment mount layout, exposes all three scenario
+  fixtures, and creates the SQLite file in the host runtime directory.
 - The image health check returns `{"status":"ok"}`.
 - `cdk synth` produces both repository and demo stacks without AWS credentials.
 - The EC2 security group has only the explicit HTTP CIDR and no SSH rule.
@@ -72,4 +74,6 @@ to ECS/Fargate or App Runner.
   write permissions.
 - The SQLite path is on the host runtime directory, while read-only scenario
   fixtures remain visible under the image's `/app/data` path.
+- The checked-in SSM update path replaces the running image and reports remote
+  command failure instead of treating command submission as deployment success.
 - The README documents deployment, teardown, and the non-production boundary.
