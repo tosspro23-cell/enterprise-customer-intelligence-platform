@@ -95,12 +95,20 @@ fi
 verify_command_id="$({
   # RepoDigests belongs to the image object, not the container object. Resolve
   # the image ID used by the running container first, then inspect that image.
+  verify_parameters="$(python3 <<'PY'
+import json
+
+print(json.dumps({"commands": [
+    "docker image inspect \"$(docker inspect --format '{{.Image}}' customer-intelligence)\" --format '{{index .RepoDigests 0}}'"
+]}))
+PY
+)"
   aws ssm send-command \
     --region "$AWS_REGION" \
     --instance-ids "$INSTANCE_ID" \
     --document-name AWS-RunShellScript \
     --comment "Verify customer intelligence demo image digest" \
-    --parameters "commands=docker image inspect \"\$(docker inspect --format '{{.Image}}' customer-intelligence)\" --format '{{index .RepoDigests 0}}'" \
+    --parameters "$verify_parameters" \
     --query Command.CommandId \
     --output text
 })"

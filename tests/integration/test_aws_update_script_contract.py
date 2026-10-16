@@ -15,6 +15,7 @@ def test_update_script_verifies_the_digest_of_the_running_image() -> None:
     assert "docker image inspect" in script
     assert 'json.dumps({"commands": [' in script
     assert '--parameters "$commands_json"' in script
+    assert '--parameters "$verify_parameters"' in script
     assert (
         "docker inspect --format '{{index .RepoDigests 0}}' customer-intelligence"
         not in script
