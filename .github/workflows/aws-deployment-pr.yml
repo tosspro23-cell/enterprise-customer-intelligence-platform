@@ -1,0 +1,119 @@
+name: AWS deployment PR validation
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "infra/aws/**"
+      - "docs/aws-deployment-plan.md"
+      - "docs/aws-phased-deployment-spec.md"
+      - "backend/**"
+      - "frontend/**"
+      - "data/**"
+      - "pyproject.toml"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install application test dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Run deterministic test suite
+        run: pytest -q
+      - name: Build container
+        run: docker build --platform linux/amd64 --tag customer-intelligence-platform:pr .
+      - name: Run container smoke test
+        run: |
+          set -euo pipefail
+          runtime_dir="$RUNNER_TEMP/customer-intelligence"
+          smoke_dir="$RUNNER_TEMP/customer-intelligence-smoke"
+          container_name="customer-intelligence-pr"
+          mkdir -p "$runtime_dir"
+          sudo chown 10001:10001 "$runtime_dir"
+          mkdir -p "$smoke_dir"
+          start_container() {
+            docker run --detach \
+              --name "$container_name" \
+              --publish 8876:8765 \
+              --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db \
+              --volume "$runtime_dir:/var/lib/customer-intelligence" \
+              customer-intelligence-platform:pr
+          }
+          wait_for_health() {
+            local ready=0
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --show-error http://127.0.0.1:8876/api/health; then
+                ready=1
+                break
+              fi
+              sleep 2
+            done
+            test "$ready" -eq 1
+          }
+          cleanup() {
+            docker logs "$container_name" || true
+            docker rm --force "$container_name" || true
+          }
+          trap cleanup EXIT
+          start_container
+          wait_for_health
+          scenario_count="$(curl --fail --silent http://127.0.0.1:8876/api/demo/scenarios | python -c 'import json, sys; print(len(json.load(sys.stdin)["scenarios"]))')"
+          test "$scenario_count" = "3"
+
+          start_response="$(curl --fail --silent --show-error \
+            --header 'Content-Type: application/json' \
+            --header 'X-Principal-Id: demo-agent' \
+            --data '{"customer_id":"C001"}' \
+            http://127.0.0.1:8876/api/calls)"
+          printf '%s' "$start_response" > "$smoke_dir/start.json"
+          call_id="$(printf '%s' "$start_response" | python -c 'import json, sys; print(json.load(sys.stdin)["call"]["call_id"])')"
+          test -n "$call_id"
+
+          curl --fail --silent --show-error \
+            --header 'Content-Type: application/json' \
+            --header 'X-Principal-Id: demo-agent' \
+            --data '{"segment_id":"smoke-1","revision":1,"is_final":true,"speaker":"CUSTOMER","text":"I am calling to ask about my account."}' \
+            "http://127.0.0.1:8876/api/calls/$call_id/transcript" \
+            > "$smoke_dir/transcript.json"
+          curl --fail --silent --show-error \
+            --header 'X-Principal-Id: demo-agent' \
+            --request POST \
+            "http://127.0.0.1:8876/api/calls/$call_id/end" \
+            > "$smoke_dir/end.json"
+          post_call_response="$(curl --fail --silent --show-error \
+            --header 'X-Principal-Id: demo-agent' \
+            --request POST \
+            "http://127.0.0.1:8876/api/calls/$call_id/post-call")"
+          printf '%s' "$post_call_response" > "$smoke_dir/post-call.json"
+          history_response="$(curl --fail --silent --show-error \
+            --header 'X-Principal-Id: demo-agent' \
+            "http://127.0.0.1:8876/api/customers/C001/history")"
+          CALL_ID="$call_id" HISTORY_JSON="$history_response" python -c \
+            'import json, os; records=json.loads(os.environ["HISTORY_JSON"])["records"]; call_id=os.environ["CALL_ID"]; assert any(record["call_id"] == call_id for record in records), (call_id, records)'
+
+          # The mounted SQLite history must survive a process/container restart.
+          docker rm --force "$container_name"
+          start_container
+          wait_for_health
+          history_after_restart="$(curl --fail --silent --show-error \
+            --header 'X-Principal-Id: demo-agent' \
+            http://127.0.0.1:8876/api/customers/C001/history)"
+          CALL_ID="$call_id" HISTORY_JSON="$history_after_restart" python -c \
+            'import json, os; records=json.loads(os.environ["HISTORY_JSON"])["records"]; call_id=os.environ["CALL_ID"]; assert any(record["call_id"] == call_id for record in records), (call_id, records)'
+          test -s "$runtime_dir/platform.db"
+      - name: Install CDK dependencies
+        run: python -m pip install -r infra/aws/requirements.txt
+      - name: Install CDK CLI
+        run: npm install --global aws-cdk@2
+      - name: Synthesize CloudFormation
+        working-directory: infra/aws
+        run: cdk synth --output cdk.out
