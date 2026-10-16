@@ -13,6 +13,8 @@ def test_update_script_verifies_the_digest_of_the_running_image() -> None:
     # that field on the container and failed after replacing the container.
     assert "docker inspect --format '{{.Image}}' customer-intelligence" in script
     assert "docker image inspect" in script
+    assert 'json.dumps({"commands": [' in script
+    assert '--parameters "$commands_json"' in script
     assert (
         "docker inspect --format '{{index .RepoDigests 0}}' customer-intelligence"
         not in script

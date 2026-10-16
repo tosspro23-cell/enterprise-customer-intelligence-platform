@@ -24,6 +24,28 @@ if [[ -z "$expected_digest" || "$expected_digest" == "None" ]]; then
   exit 1
 fi
 
+commands_json="$(python3 - "$AWS_REGION" "$registry_host" "$image_uri" "$LOG_GROUP_NAME" <<'PY'
+import json
+import sys
+
+region, registry_host, image_uri, log_group_name = sys.argv[1:]
+print(json.dumps({"commands": [
+    "set -euo pipefail",
+    f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_host}",
+    f"docker pull {image_uri}",
+    "docker rm --force customer-intelligence || true",
+    (
+        "docker run --detach --name customer-intelligence --restart unless-stopped "
+        "--publish 80:8765 --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db "
+        "--volume /var/lib/customer-intelligence:/var/lib/customer-intelligence "
+        f"--log-driver awslogs --log-opt awslogs-region={region} "
+        f"--log-opt awslogs-group={log_group_name} "
+        f"--log-opt awslogs-stream=customer-intelligence {image_uri}"
+    ),
+]}))
+PY
+)"
+
 wait_for_command() {
   local command_id="$1"
   local wait_status=0
@@ -44,7 +66,7 @@ command_id="$({
     --instance-ids "$INSTANCE_ID" \
     --document-name AWS-RunShellScript \
     --comment "Update customer intelligence demo to ${IMAGE_TAG}" \
-    --parameters "commands=set -euo pipefail,aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${registry_host},docker pull ${image_uri},docker rm --force customer-intelligence || true,docker run --detach --name customer-intelligence --restart unless-stopped --publish 80:8765 --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db --volume /var/lib/customer-intelligence:/var/lib/customer-intelligence --log-driver awslogs --log-opt awslogs-region=${AWS_REGION} --log-opt awslogs-group=${LOG_GROUP_NAME} --log-opt awslogs-stream=customer-intelligence ${image_uri}" \
+    --parameters "$commands_json" \
     --query Command.CommandId \
     --output text
 })"
