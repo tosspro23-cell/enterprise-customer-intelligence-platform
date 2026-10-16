@@ -27,7 +27,7 @@ demo_stack = CustomerIntelligenceDemoStack(
     "CustomerIntelligenceDemo",
     repository=repository_stack.repository,
     allowed_cidr=app.node.try_get_context("allowed_cidr"),
-    image_tag=app.node.try_get_context("image_tag") or "latest",
+    image_tag=app.node.try_get_context("image_tag") or "initial",
     env=environment,
 )
 demo_stack.add_dependency(repository_stack)

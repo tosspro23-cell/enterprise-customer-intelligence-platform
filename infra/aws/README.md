@@ -69,8 +69,8 @@ group. The host is managed through Systems Manager; no inbound SSH rule or SSH
 key is created.
 
 Treat a successful CloudFormation deployment as infrastructure creation, not
-as proof that the demo is ready. Complete this smoke check before sharing the
-URL:
+as proof that the demo is ready. Complete the following smoke check before
+sharing the URL:
 
 ```bash
 export DEMO_URL="<DemoUrl output>"
@@ -80,16 +80,21 @@ curl --fail "$DEMO_URL/api/demo/scenarios" \
 aws ssm describe-instance-information --region "$AWS_REGION"
 ```
 
-The smoke check confirms the application and fixtures are available, but the
-live account test must still verify the EBS-backed SQLite path, CloudWatch log
-delivery, and the actual Security Group CIDR.
+Then exercise one complete synthetic call through start, transcript, end, and
+post-call, read the customer history, restart the container through SSM, and
+read that history again. This verifies the EBS-backed SQLite path rather than
+only proving that the container started. A container/process restart preserves
+completed history but resets any in-memory live call; restart the scenario if
+the live demo was interrupted.
 
 ## Update an existing host
 
-EC2 user data is an initial bootstrap mechanism. It is not the image rollout
-mechanism. After pushing a new commit-tagged image to ECR, use the checked-in
-SSM update script so the existing host pulls and replaces the container while
-preserving the runtime directory:
+EC2 user data is an initial bootstrap mechanism used only when the host is first
+created. It is not the image rollout mechanism, and re-running `cdk deploy`
+does not by itself replace the image on an existing host. After pushing a new
+commit-tagged image to the immutable ECR repository, use the checked-in SSM
+update script so the existing host pulls and replaces the container while
+preserving the runtime directory and verifying the running image digest:
 
 ```bash
 export INSTANCE_ID="<InstanceId output>"
@@ -105,7 +110,9 @@ successful `aws ssm send-command` request alone.
 
 ## Teardown and cost control
 
-To stop compute charges after a demo, destroy the demo stack. The ECR
+To stop compute charges after a demo, destroy the demo stack. Stopping the
+instance instead preserves the root EBS volume and SQLite data but can still
+incur storage, public IPv4, and logging charges. The ECR
 repository is intentionally retained by the repository stack so images are not
 deleted accidentally. Destroying the demo stack deletes the instance, its root
 EBS volume, the runtime SQLite database, and the demo log group.

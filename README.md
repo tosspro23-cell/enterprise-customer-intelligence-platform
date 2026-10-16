@@ -55,4 +55,4 @@ See [docs/architecture.md](docs/architecture.md), [docs/data-contracts.md](docs/
 
 ## AWS demo deployment
 
-The first cloud deployment is intentionally a single-host demo target: Docker on a `t3.micro` EC2 instance, an encrypted EBS data volume for SQLite, ECR for the image, CloudWatch Logs, and Systems Manager access. It preserves the local reference-slice semantics while providing a stable URL for synthetic-data demonstrations. It is not a production deployment. See [docs/aws-deployment-plan.md](docs/aws-deployment-plan.md) and [infra/aws/README.md](infra/aws/README.md) for the deployment and teardown procedure.
+The first cloud deployment is intentionally a single-host demo target: Docker on a `t3.micro` EC2 instance, an encrypted EBS data volume for SQLite, ECR for the image, CloudWatch Logs, and Systems Manager access. It preserves the local reference-slice semantics while providing a reachable temporary endpoint for synthetic-data demonstrations. It is not a production deployment. See [docs/aws-deployment-plan.md](docs/aws-deployment-plan.md) and [infra/aws/README.md](infra/aws/README.md) for the deployment and teardown procedure.

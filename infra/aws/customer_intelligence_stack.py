@@ -33,6 +33,7 @@ class CustomerIntelligenceRepositoryStack(Stack):
             "ApplicationRepository",
             repository_name="customer-intelligence-platform",
             image_scan_on_push=True,
+            image_tag_mutability=ecr.TagMutability.IMMUTABLE,
             lifecycle_rules=[ecr.LifecycleRule(max_image_count=5)],
             removal_policy=RemovalPolicy.RETAIN,
         )
@@ -71,6 +72,8 @@ class CustomerIntelligenceDemoStack(Stack):
         cidr_kwargs = {
             "type": "String",
             "description": "CIDR allowed to access the HTTP demo endpoint; use a /32 for a private demo.",
+            "allowed_pattern": r"^(?!0\.0\.0\.0/0$).+$",
+            "constraint_description": "Use a restricted IPv4 CIDR; 0.0.0.0/0 is not allowed for the synthetic demo.",
         }
         if allowed_cidr:
             cidr_kwargs["default"] = allowed_cidr
@@ -160,6 +163,7 @@ class CustomerIntelligenceDemoStack(Stack):
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
             instance_type=ec2.InstanceType("t3.micro"),
+            credit_specification=ec2.CpuCredits.STANDARD,
             machine_image=ec2.MachineImage.from_ssm_parameter(
                 "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
             ),

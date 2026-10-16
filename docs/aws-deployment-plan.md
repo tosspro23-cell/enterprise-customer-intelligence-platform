@@ -9,9 +9,10 @@ Amazon ECR for the image, CloudWatch Logs for application output, and Systems
 Manager Session Manager for administrative access.
 
 This is the narrowest deployment that preserves the current reference-slice
-semantics. It gives the Workbench a stable URL for cloud testing and customer
-demonstrations without prematurely changing the concurrency and persistence
-model.
+semantics. It gives the Workbench a reachable temporary endpoint for cloud
+testing and customer demonstrations without prematurely changing the
+concurrency and persistence model. The public IP may change after a
+stop/start, so this is not a stable production URL.
 
 ## Why this target first
 
@@ -38,6 +39,8 @@ real customer data because:
 - the first endpoint is HTTP-only and should be CIDR-restricted;
 - SQLite is durable across container restarts on one host but is not safe for
   horizontal scaling, instance replacement, or deletion;
+- a process/container restart preserves completed history but intentionally
+  loses in-memory live-call state; the active scenario must be restarted;
 - there is no managed failover, backup policy, or disaster-recovery runbook;
 - deployment is manual and approval-gated rather than an unattended pipeline.
 
@@ -68,6 +71,9 @@ are tested should the runtime move to ECS/Fargate or App Runner.
 - The image starts with the deployment mount layout, exposes all three scenario
   fixtures, and creates the SQLite file in the host runtime directory.
 - The image health check returns `{"status":"ok"}`.
+- A minimal call can be started, receive a transcript segment, end, and run
+  post-call processing; the resulting history record is readable after the
+  container is restarted with the same mounted runtime directory.
 - `cdk synth` produces both repository and demo stacks without AWS credentials.
 - The EC2 security group has only the explicit HTTP CIDR and no SSH rule.
 - The instance role grants Session Manager, ECR read, and scoped CloudWatch log

@@ -2,6 +2,6 @@
   "app": "python3 app.py",
   "requireApproval": "broadening",
   "context": {
-    "image_tag": "latest"
+    "image_tag": "initial"
   }
 }

@@ -51,15 +51,16 @@ both phases:
 
 ### 3.1 Goal
 
-Run the current reference slice in `us-east-1` with a stable cloud URL and a
-repeatable operational path, without changing the application's distributed
-state contract.
+Run the current reference slice in `us-east-1` with a reachable temporary demo
+endpoint and a repeatable operational path, without changing the application's
+distributed state contract. The endpoint is based on an EC2 public IP and is
+not a stable production URL across stop/start operations.
 
 ### 3.2 In-scope AWS resources
 
 | Concern | Phase 1 implementation | Reason |
 | --- | --- | --- |
-| Image registry | Amazon ECR repository with scan-on-push and a short lifecycle | Commit-tagged, reproducible demo images |
+| Image registry | Amazon ECR repository with scan-on-push, immutable tags, and a short lifecycle | Commit-tagged, reproducible demo images |
 | Runtime | One Amazon EC2 `t3.micro` instance running Docker on Amazon Linux 2023 | Preserves the one-process contract |
 | Network | One-AZ VPC, public subnet, no NAT gateway | Avoids unnecessary always-on networking cost |
 | Ingress | Security Group TCP/80 from the explicitly supplied CIDR only | Synthetic private demo; no open internet rule |
@@ -82,9 +83,11 @@ The following evidence is required before calling Phase 1 complete:
 - CDK synthesizes both stacks without cloud credentials;
 - the deployed container returns a healthy response;
 - all three scenario fixtures are available through the deployed API;
+- a minimal call can be started, receive a transcript segment, end, and run
+  post-call processing;
+- the completed history record remains readable after a container restart with
+  the same mounted runtime directory;
 - the SQLite file is created under the mounted runtime directory;
-- a container restart preserves the SQLite file and the application remains
-  healthy;
 - the SSM update path replaces the running image and reports remote failure
   rather than only command-submission success;
 - CloudWatch receives application logs;
@@ -159,9 +162,14 @@ is not acceptance.
 
 - Use a non-root AWS identity for CLI/CDK operations.
 - Keep the demo CIDR narrow, normally a `/32`.
+- The stack rejects `0.0.0.0/0` and configures standard T3 CPU-credit mode;
+  stop the instance when it is not being tested.
 - Do not put credentials in the image, repository, or GitHub Actions secrets.
 - Use synthetic data only.
 - Keep the ECR repository retained deliberately, and document its cleanup.
+- Destroying the demo stack deletes the instance, root EBS volume, SQLite
+  runtime data, and demo log group; the retained ECR repository and any CDK
+  bootstrap resources require a separate cleanup decision.
 - Review Cost Management after deployment and destroy the demo stack when it
   is not needed.
 

@@ -9,7 +9,34 @@ set -euo pipefail
 : "${LOG_GROUP_NAME:?Set LOG_GROUP_NAME from the CustomerIntelligenceDemo output}"
 
 registry_host="${REPOSITORY_URI%%/*}"
+repository_name="${REPOSITORY_URI#*/}"
 image_uri="${REPOSITORY_URI}:${IMAGE_TAG}"
+expected_digest="$({
+  aws ecr describe-images \
+    --region "$AWS_REGION" \
+    --repository-name "$repository_name" \
+    --image-ids "imageTag=${IMAGE_TAG}" \
+    --query 'imageDetails[0].imageDigest' \
+    --output text
+})"
+if [[ -z "$expected_digest" || "$expected_digest" == "None" ]]; then
+  echo "ECR image tag ${IMAGE_TAG} was not found in ${repository_name}" >&2
+  exit 1
+fi
+
+wait_for_command() {
+  local command_id="$1"
+  local wait_status=0
+  if aws ssm wait command-executed \
+    --region "$AWS_REGION" \
+    --command-id "$command_id" \
+    --instance-id "$INSTANCE_ID"; then
+    :
+  else
+    wait_status=$?
+    echo "SSM waiter reported a non-success terminal state for ${command_id} (exit ${wait_status}); fetching invocation details." >&2
+  fi
+}
 
 command_id="$({
   aws ssm send-command \
@@ -23,10 +50,7 @@ command_id="$({
 })"
 
 echo "Waiting for SSM command ${command_id} on ${INSTANCE_ID}"
-aws ssm wait command-executed \
-  --region "$AWS_REGION" \
-  --command-id "$command_id" \
-  --instance-id "$INSTANCE_ID"
+wait_for_command "$command_id"
 
 status="$(aws ssm get-command-invocation \
   --region "$AWS_REGION" \
@@ -45,3 +69,43 @@ aws ssm get-command-invocation \
 if [[ "$status" != "Success" ]]; then
   exit 1
 fi
+
+verify_command_id="$({
+  aws ssm send-command \
+    --region "$AWS_REGION" \
+    --instance-ids "$INSTANCE_ID" \
+    --document-name AWS-RunShellScript \
+    --comment "Verify customer intelligence demo image digest" \
+    --parameters "commands=docker inspect --format '{{index .RepoDigests 0}}' customer-intelligence" \
+    --query Command.CommandId \
+    --output text
+})"
+
+echo "Verifying image digest with SSM command ${verify_command_id}"
+wait_for_command "$verify_command_id"
+
+verify_status="$(aws ssm get-command-invocation \
+  --region "$AWS_REGION" \
+  --command-id "$verify_command_id" \
+  --instance-id "$INSTANCE_ID" \
+  --query Status \
+  --output text)"
+running_image_ref="$(aws ssm get-command-invocation \
+  --region "$AWS_REGION" \
+  --command-id "$verify_command_id" \
+  --instance-id "$INSTANCE_ID" \
+  --query StandardOutputContent \
+  --output text | tr -d '\r\n')"
+running_digest="${running_image_ref##*@}"
+if [[ "$verify_status" != "Success" || "$running_digest" != "$expected_digest" ]]; then
+  echo "Running image digest mismatch: expected ${expected_digest}, got ${running_digest:-<empty>}" >&2
+  aws ssm get-command-invocation \
+    --region "$AWS_REGION" \
+    --command-id "$verify_command_id" \
+    --instance-id "$INSTANCE_ID" \
+    --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' \
+    --output json
+  exit 1
+fi
+
+echo "Running image digest verified: ${running_digest}"
