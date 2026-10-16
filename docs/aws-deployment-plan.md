@@ -9,10 +9,12 @@ Amazon ECR for the image, CloudWatch Logs for application output, and Systems
 Manager Session Manager for administrative access.
 
 This is the narrowest deployment that preserves the current reference-slice
-semantics. It gives the Workbench a reachable temporary endpoint for cloud
-testing and customer demonstrations without prematurely changing the
-concurrency and persistence model. The public IP may change after a
-stop/start, so this is not a stable production URL.
+semantics. It gives the Workbench a stable HTTP endpoint for cloud testing and
+customer demonstrations without prematurely changing the concurrency and
+persistence model. The endpoint is backed by a stack-owned Elastic IP, so
+normal application image rollouts and instance stop/start operations retain
+the same address while the demo stack exists. Destroying the stack releases
+the address; it is not a permanent production URL or domain name.
 
 ## Why this target first
 
@@ -37,6 +39,8 @@ real customer data because:
 - the browser uses the reference demo principal model rather than enterprise
   identity;
 - the first endpoint is HTTP-only and should be CIDR-restricted;
+- the Elastic IP is a stable demo address, not TLS, DNS, or a production ingress
+  boundary;
 - SQLite is durable across container restarts on one host but is not safe for
   horizontal scaling, instance replacement, or deletion;
 - a process/container restart preserves completed history but intentionally
@@ -90,6 +94,8 @@ conditional follow-up increments.
   digest check resolves the image ID from the running container and inspects
   the image object; `RepoDigests` is not a container field.
 - The README documents deployment, teardown, and the non-production boundary.
+- The demo URL is backed by a stack-owned Elastic IP and remains stable while
+  the demo stack exists; teardown releases that address.
 
 ## Observed Phase 1 account checks
 
@@ -106,3 +112,5 @@ They are account evidence for this demo, not a promise of continuing zero cost:
   checked in the AWS console while the demo remains deployed.
 - The demo remains synthetic-only and should be destroyed when it is not needed;
   the retained ECR repository and images are a separate storage-cost decision.
+  The Elastic IP is also a billable public IPv4 resource and is released by
+  destroying the demo stack.

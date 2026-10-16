@@ -51,10 +51,11 @@ both phases:
 
 ### 3.1 Goal
 
-Run the current reference slice in `us-east-1` with a reachable temporary demo
+Run the current reference slice in `us-east-1` with a reachable stable demo
 endpoint and a repeatable operational path, without changing the application's
-distributed state contract. The endpoint is based on an EC2 public IP and is
-not a stable production URL across stop/start operations.
+distributed state contract. The endpoint uses a stack-owned Elastic IP and is
+stable across normal stop/start and image rollout operations while the demo
+stack exists. It is not a production URL or a domain-name strategy.
 
 ### 3.2 In-scope AWS resources
 
@@ -63,6 +64,7 @@ not a stable production URL across stop/start operations.
 | Image registry | Amazon ECR repository with scan-on-push, immutable tags, and a short lifecycle | Commit-tagged, reproducible demo images |
 | Runtime | One Amazon EC2 `t3.micro` instance running Docker on Amazon Linux 2023 | Preserves the one-process contract |
 | Network | One-AZ VPC, public subnet, no NAT gateway | Avoids unnecessary always-on networking cost |
+| Endpoint | Stack-owned Elastic IP associated with the demo instance | Keeps the test and demo URL stable during normal operations |
 | Ingress | Security Group TCP/80 from the explicitly supplied CIDR only | Synthetic private demo; no open internet rule |
 | Persistence | 20 GiB encrypted gp3 EBS root volume, host runtime directory mounted into the container | Keeps SQLite across container restarts on the same host |
 | Instance access | Systems Manager Session Manager through an instance role | No SSH port and no SSH key lifecycle |

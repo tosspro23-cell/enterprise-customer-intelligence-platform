@@ -64,9 +64,11 @@ cdk deploy CustomerIntelligenceDemo \
   --require-approval broadening
 ```
 
-The stack outputs the temporary HTTP URL, instance ID, and CloudWatch log
-group. The host is managed through Systems Manager; no inbound SSH rule or SSH
-key is created.
+The stack outputs the Elastic-IP-backed HTTP URL, instance ID, and CloudWatch
+log group. The URL remains the same across normal application image rollouts
+and instance stop/start operations while the demo stack and Elastic IP exist.
+The host is managed through Systems Manager; no inbound SSH rule or SSH key is
+created.
 
 Treat a successful CloudFormation deployment as infrastructure creation, not
 as proof that the demo is ready. Complete the following smoke check before
@@ -112,10 +114,11 @@ successful `aws ssm send-command` request alone.
 
 To stop compute charges after a demo, destroy the demo stack. Stopping the
 instance instead preserves the root EBS volume and SQLite data but can still
-incur storage, public IPv4, and logging charges. The ECR
+incur storage, Elastic IP/public IPv4, and logging charges. The ECR
 repository is intentionally retained by the repository stack so images are not
-deleted accidentally. Destroying the demo stack deletes the instance, its root
-EBS volume, the runtime SQLite database, and the demo log group.
+deleted accidentally. Destroying the demo stack releases the Elastic IP and
+deletes the instance, its root EBS volume, the runtime SQLite database, and the
+demo log group.
 
 ```bash
 cdk destroy CustomerIntelligenceDemo

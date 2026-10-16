@@ -185,13 +185,30 @@ class CustomerIntelligenceDemoStack(Stack):
             ],
         )
 
+        # Keep the demo entry point stable across normal instance stop/start
+        # operations and application image rollouts. This is still an HTTP,
+        # synthetic-data endpoint, not a production ingress boundary.
+        elastic_ip = ec2.CfnEIP(self, "DemoElasticIp", domain="vpc")
+        elastic_ip.apply_removal_policy(RemovalPolicy.DESTROY)
+        ec2.CfnEIPAssociation(
+            self,
+            "DemoElasticIpAssociation",
+            allocation_id=elastic_ip.attr_allocation_id,
+            instance_id=instance.instance_id,
+        )
+
         CfnOutput(self, "InstanceId", value=instance.instance_id)
-        CfnOutput(self, "PublicIp", value=instance.instance_public_ip)
+        CfnOutput(
+            self,
+            "PublicIp",
+            value=elastic_ip.ref,
+            description="Elastic IP assigned to the synthetic demo host.",
+        )
         CfnOutput(
             self,
             "DemoUrl",
-            value=f"http://{instance.instance_public_ip}",
-            description="Temporary HTTP URL for the synthetic-data demo.",
+            value=f"http://{elastic_ip.ref}",
+            description="Stable HTTP URL for the synthetic-data demo while the stack exists.",
         )
         CfnOutput(self, "LogGroupName", value=log_group.log_group_name)
 
