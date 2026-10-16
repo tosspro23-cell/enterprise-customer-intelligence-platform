@@ -89,6 +89,8 @@ conditional follow-up increments.
   fixtures remain visible under the image's `/app/data` path.
 - The checked-in SSM update path replaces the running image and reports remote
   command failure instead of treating command submission as deployment success.
+- The CI suite executes the update path against a local fake AWS CLI and covers
+  successful rollout, remote SSM failure, and running-image digest mismatch.
 - After an image update, the same health, scenario, and completed-history
   smoke must pass, and the actual running image digest must be recorded. The
   digest check resolves the image ID from the running container and inspects
@@ -96,6 +98,22 @@ conditional follow-up increments.
 - The README documents deployment, teardown, and the non-production boundary.
 - The demo URL is backed by a stack-owned Elastic IP and remains stable while
   the demo stack exists; teardown releases that address.
+
+### Deployment identity closeout boundary
+
+The Phase One deployment identity is a non-root IAM user, but it currently has
+the broad `AdministratorAccess` managed policy so that the initial, manually
+approved CDK deployment could be completed without hiding a missing service
+permission. This is an operational convenience, not a least-privilege design
+and not permission to deploy arbitrary future infrastructure without review.
+
+Before Phase Two or any real customer data, replace this broad policy with a
+scoped deployment role and an explicitly reviewed trust path. The replacement
+must be derived from the actual CDK bootstrap, CloudFormation execution, ECR,
+SSM, CloudWatch, EC2, and IAM-pass-role actions used by the selected stacks;
+guessing a short allow-list would risk either a broken deployment or a false
+security claim. Phase One is therefore accepted as synthetic-only with this
+identity hardening recorded as a required follow-up.
 
 ## Observed Phase 1 account checks
 
