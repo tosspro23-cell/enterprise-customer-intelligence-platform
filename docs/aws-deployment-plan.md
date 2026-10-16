@@ -61,9 +61,12 @@ only inbound rule is the explicitly supplied HTTP CIDR for the demo endpoint.
 
 The first PR adds container and CDK foundations plus an explicit SSM update
 path. After a successful cloud smoke test, the next PR should introduce a
-persistence abstraction that can be backed by DynamoDB or Aurora PostgreSQL,
-then add a real authentication boundary and TLS. Only after those contracts
-are tested should the runtime move to ECS/Fargate or App Runner.
+persistence port with RDS PostgreSQL as the baseline, then define and test
+cross-process state ownership and coordination. A real authentication and TLS
+boundary must precede any non-synthetic data. Only after those contracts are
+tested should the runtime move to ECS/Fargate or, if it is truly stateless
+HTTP, App Runner. Caches, event streams, and managed retrieval remain
+conditional follow-up increments.
 
 ## Operational acceptance for this PR
 
@@ -82,4 +85,6 @@ are tested should the runtime move to ECS/Fargate or App Runner.
   fixtures remain visible under the image's `/app/data` path.
 - The checked-in SSM update path replaces the running image and reports remote
   command failure instead of treating command submission as deployment success.
+- After an image update, the same health, scenario, and completed-history
+  smoke must pass, and the actual running image digest must be recorded.
 - The README documents deployment, teardown, and the non-production boundary.

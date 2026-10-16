@@ -114,47 +114,129 @@ Phase 1 does not include:
 
 Replace local and single-host boundaries with managed AWS services only after
 the corresponding application ports and operational contracts are tested.
-Phase 2 is a program of separate PRs, not one large infrastructure change.
+Phase 2 is a candidate roadmap made of separate PRs, not an implementation
+checklist. A service is added only when its requirement, acceptance evidence,
+cost boundary, and rollback path are explicit.
 
-### 4.2 Target service mapping
+### 4.2 Authority and state prerequisites
 
-| Capability in the reference cloud implementation | AWS target | Required contract decision |
+Before selecting a cache, event service, or runtime topology, freeze the
+authority of each state class:
+
+| State class | Authoritative source in the target design | Boundary that must be proven |
 | --- | --- | --- |
-| Managed container environment | ECS on Fargate, with separate UI and headless tasks | Service/task boundary, scaling, health, and rollout semantics |
-| Public Workbench ingress | Application Load Balancer + ACM certificate + optional WAF | HTTPS, authentication, client IP policy, and rate limits |
-| Internal load-test runner | Internal ECS service/task or scheduled task | No public trigger; explicit operator authorization |
-| Hot per-call state | ElastiCache for Valkey/Redis | TTL, key ownership, failure behavior, and concurrency model |
-| Partitioned domain-event stream | Kinesis Data Streams when ordering/replay matters; EventBridge when routing/fan-out is the primary need | Ordering, replay, retention, consumers, and delivery guarantees |
-| Managed analytical persistence | RDS PostgreSQL or Aurora PostgreSQL | Migrations, transactions, indexes, backup, retention, and tenant scope |
-| Curated guidance retrieval | OpenSearch Serverless or Bedrock Knowledge Bases | Corpus ownership, indexing, citations, freshness, and query cost |
-| Real-time speech path | Amazon Transcribe Streaming + Amazon Polly | Audio retention, latency budget, voice policy, and failure fallback |
-| Sentiment/language enrichment | Amazon Comprehend plus deterministic taxonomy logic | Aspect semantics, model versioning, and evidence labeling |
-| Bounded model explanation | Amazon Bedrock adapter or an explicitly governed external model adapter | Model access, region, timeout, fallback, content filtering, and cost limits |
-| Runtime secrets | AWS Secrets Manager and task/instance roles | No long-lived application keys in images or source |
-| Service identity | IAM roles for workloads; Cognito or external OIDC for users | Agent/supervisor authorization and tenant isolation |
-| Observability | CloudWatch metrics/logs, traces through OpenTelemetry/ADOT, dashboards and alarms | Correlation IDs, payload redaction, latency/error SLOs, and audit retention |
-| Deployment | GitHub Actions with OIDC to AWS, ECR image digests, approval-gated CDK deploy | Provenance, rollback, and no static GitHub cloud keys |
+| Completed interactions, post-call records, and decision evidence | PostgreSQL-compatible durable store; RDS PostgreSQL is the Phase 2 baseline | Transactions, migrations, idempotency, deletion, backup, restore, and tenant scope |
+| Live call state and coordination | An explicitly versioned state/coordination contract; it cannot remain an unexamined process-local map when tasks can overlap | Owner/lease or equivalent authority, stale-result rejection, takeover, and recovery rules |
+| Guidance corpus and versions | Versioned source corpus; indexes are derived representations | Ingestion, version switching, deletion propagation, permission filtering, and citations |
+| Model outputs and business decisions | Deterministic business state plus immutable evidence references | Model output cannot create authority, eligibility, customer scope, or publication permission |
+| UI delivery state | The existing monotonic UI and delivery evidence model | Client ordering and recovery cannot become the source of business truth |
 
-### 4.3 Recommended Phase 2 order
+Shared persistence alone does not make the current in-process coordinator
+scalable. The design must first define how two workers coordinate on one call,
+how old work becomes invalid, and how a replacement worker takes over.
 
-1. **Persistence adapter:** introduce a storage port and migration tests;
-   prove PostgreSQL semantics before changing the runtime.
-2. **Identity and secret boundary:** add workload roles, Secrets Manager, and
-   a real user authentication/authorization contract.
-3. **Managed runtime:** move the stateless HTTP process to ECS/Fargate behind
-   an HTTPS ALB; keep the headless worker internal.
-4. **Hot state and events:** add Valkey/Redis and select Kinesis or EventBridge
-   based on the finalized delivery contract.
-5. **AI adapters:** add Bedrock, Transcribe, Polly, and Comprehend behind the
-   existing ports; retain deterministic fallbacks and evidence labels.
-6. **Retrieval:** add managed search only when the guidance corpus requires
-   ranked retrieval, filtering, or independent update cadence.
-7. **Operations:** add dashboards, alarms, backups, rollback, load tests,
-   budget controls, and a recovery runbook.
+### 4.3 Service choices: defaults and conditional candidates
+
+| Capability | Phase 2 default | Conditional candidate and entry condition |
+| --- | --- | --- |
+| Public runtime | ECS/Fargate when the platform needs an independent worker, internal task, or explicit rollout control | App Runner only if the service is proven stateless HTTP, has no internal worker requirement, and its managed boundary is valuable enough to justify the persistence work |
+| Public ingress | HTTPS termination with ALB + ACM when Fargate is selected | WAF only after the threat model and rate-limit requirements justify it; App Runner's ingress is an alternative, not an additional layer by default |
+| Durable persistence | RDS PostgreSQL as the small-scale baseline | Aurora PostgreSQL only when availability, scaling, or measured cost evidence exceeds the RDS baseline |
+| Hot per-call state | No independent cache initially; use the durable/coordination contract if its latency meets the target | ElastiCache for Valkey/Redis when hot state is rebuildable and latency tests justify it; MemoryDB only when a durable in-memory authority is explicitly required |
+| Event transport | No independent event stream initially | Kinesis for ordered, replayable continuous streams; EventBridge for routed notifications and fan-out. Choose per event type, and verify the selected bus/target ordering behavior rather than relying on a platform-wide rule |
+| Guidance retrieval | Existing retrieval port and deterministic local/reference implementation | OpenSearch when indexing, query, and corpus lifecycle need direct control; Bedrock Knowledge Bases when managed ingestion/retrieval reduces justified operational work |
+| Model explanation | Bedrock adapter as one bounded real-model candidate | An external governed adapter only when its region, privacy, timeout, cost, and evidence contract are equivalent |
+| Speech input | No speech service until real audio is a test requirement | Transcribe Streaming when audio latency, retention, and fallback are specified |
+| Sentiment enrichment | Existing deterministic taxonomy remains the reference | Comprehend only after a task-level evaluation proves its language/aspect behavior; it is not a default multi-language implementation |
+| Speech output | Not in the default scope | Polly only if the product adds a real synthesized-voice output requirement |
+| Identity and secrets | Workload IAM roles plus a real user authentication boundary before non-synthetic data | Cognito or external OIDC according to the agent/supervisor and tenant model; Secrets Manager for runtime secrets |
+| Observability and delivery | The minimum controls ship with each increment | CloudWatch/OpenTelemetry, GitHub OIDC, dashboards, and alarms expand only with the corresponding runtime and data boundary |
+
+Separate UI and headless tasks, a permanent load-test service, Polly, and an
+independent event stream are therefore candidates, not Phase 2 prerequisites.
+
+### 4.4 Migration order
+
+1. **Authority contract:** document durable state, live state, decision
+   evidence, revision/state-version rules, ownership, and recovery behavior.
+2. **PostgreSQL adapter:** add the storage port, RDS PostgreSQL baseline, and
+   migration tests for transactions, idempotency, deletion, and restore.
+3. **Cross-process coordination:** prove two workers handling one call, an old
+   worker returning late, complaint reopen during an update, and deletion
+   racing with background writes. Do not move to a multi-task runtime before
+   these tests pass.
+4. **Identity, secrets, and transport:** add workload roles, Secrets Manager,
+   HTTPS, and agent/supervisor authorization. These are necessary gates for
+   any non-synthetic data, not proof that the data policy is complete.
+5. **Managed runtime:** move the proven coordinator to Fargate, or select App
+   Runner only if its stateless HTTP conditions are satisfied. Verify rolling
+   deployment, task exit, takeover, health, and rollback behavior.
+6. **Measured hot state and events:** add Valkey/Redis, Kinesis, EventBridge,
+   or no additional service according to the finalized semantic and latency
+   requirements.
+7. **AI adapters:** add Bedrock first as a bounded explanation adapter; add
+   Transcribe only with an audio test plan and evaluate Comprehend separately.
+   Keep deterministic fallbacks and evidence labels.
+8. **Managed retrieval:** place OpenSearch or Knowledge Bases behind the
+   existing retrieval port only after corpus ownership, permissions, versioning,
+   deletion, and citation contracts are accepted.
 
 Each increment must have a separate acceptance suite that proves the
 cross-boundary invariant it introduces. Green infrastructure synthesis alone
 is not acceptance.
+
+### 4.5 Event semantics
+
+Event services are selected by event meaning, not by a platform-wide
+Kinesis-versus-EventBridge rule:
+
+| Event type | Required semantics | Candidate only after the requirement is proven |
+| --- | --- | --- |
+| Transcript/revision | Ordering, duplicate handling, replay, consumer position, and stale-result rejection | Kinesis or a simpler durable application boundary |
+| Post-call job | Retry, failure isolation, idempotency, and completion evidence | A queue/worker mechanism selected with the job contract |
+| Business notification | Routing, subscriptions, and delivery policy | EventBridge or an equivalent notification boundary |
+| UI update | Client ordering, state recovery, and browser acknowledgement | The existing application delivery model; a message bus is not business authority |
+
+The selected service must not replace application-level revision, state
+version, idempotency, or old-result invalidation. If EventBridge is evaluated,
+the exact bus, target, and subscriber topology must be verified against the
+required ordering and grouping behavior.
+
+### 4.6 Retrieval and Knowledge Bases boundary
+
+OpenSearch is an indexing/search implementation; Bedrock Knowledge Bases is a
+managed ingestion and retrieval layer that may use OpenSearch or another
+backing store. They are not mutually exclusive choices at the same layer.
+
+The decision is therefore:
+
+- use direct OpenSearch when the platform must control ingestion, chunking,
+  index versions, filtering, and query behavior;
+- use Knowledge Bases when managed ingestion and retrieval provide enough
+  value and its permission, version, deletion, and citation behavior can be
+  verified;
+- keep either implementation behind the existing retrieval port.
+
+Knowledge Bases must not bypass deterministic commercial policy, authorization,
+or server publication checks. Every returned guidance item must be traceable to
+an allowed source/version, and stale or deleted guidance must not be returned.
+
+### 4.7 Per-increment operational and cost contract
+
+Operations are delivered with the increment that introduces the boundary:
+
+| Increment | Required controls before acceptance |
+| --- | --- |
+| Database | Migration rollback, backup, restore evidence, deletion behavior, and tenant-scope checks |
+| Task scaling/runtime | Concurrency limit, health/readiness checks, rollout and rollback steps, and cost ceiling |
+| Model adapter | Timeout, quota/budget limit, redacted logs, fallback, and evidence labeling |
+| Event or job transport | Retry, dead-letter/failure visibility, idempotency, replay/retention decision, and teardown |
+| Audio | Retention, deletion, access scope, latency budget, and failure fallback |
+| Retrieval | Permission filtering, version switch, deletion propagation, citation, and index cost boundary |
+
+HTTPS and real identity are necessary before non-synthetic data but are not
+sufficient. Purpose, retention, deletion, audit, and recovery approval remain
+separate gates.
 
 ## 5. Security and cost guardrails
 
@@ -176,13 +258,30 @@ is not acceptance.
 ### Phase 2
 
 - No public database, cache, stream, or search endpoint.
-- Prefer private subnets and VPC endpoints; use NAT only where its cost and
-  necessity are proven.
+- Prefer private subnets; compare VPC endpoint and NAT cost against the
+  actual service set and usage pattern instead of assuming either is cheaper.
 - Require HTTPS and real identity before any non-synthetic data.
-- Add resource tags, budgets, anomaly alerts, log retention, backup policy,
-  and deletion protection where appropriate.
+- Add resource tags, budgets, anomaly alerts, and log retention with the first
+  resource in each increment; add backup, deletion protection, and recovery
+  evidence with the first durable store.
 - Define data residency, retention, deletion, and audit requirements before
   enabling audio or transcript ingestion.
+- Classify each Phase 2 service as default, conditional, or out of the current
+  scope, and record the teardown path for every conditional resource.
+
+### Phase 2 cost scenarios
+
+Gate C requires estimates and teardown steps for all three operating modes:
+
+| Scenario | Required cost evidence |
+| --- | --- |
+| One two-hour demonstration | Which resources are created only for the window, what survives teardown, and who confirms cleanup |
+| One week of intermittent development | Which services charge while idle, how long they may remain paused, and how they are automatically or manually resumed |
+| Continuous pilot | Fixed foundation cost, peak capacity cost, and incremental cost per completed call |
+
+Serverless or autoscaling labels do not establish a zero-idle-cost design.
+Storage, public ingress, load balancers, databases, caches, search, logging,
+and VPC connectivity must be included in the estimate.
 
 ## 6. Phase gates
 
@@ -202,8 +301,12 @@ is not acceptance.
 
 ### Gate C: Phase 2 design freeze
 
-- Persistence, identity, event delivery, and retrieval contracts are reviewed.
-- A service-by-service cost estimate and teardown strategy exist.
+- Authority, persistence, cross-process coordination, identity, event delivery,
+  and retrieval contracts are reviewed.
+- Every proposed service is classified as a default, conditional candidate, or
+  out of scope, with an entry condition and acceptance evidence.
+- The three cost scenarios in Section 5 are estimated, including idle cost and
+  teardown strategy.
 - The production-shaped threat model and data classification are approved.
 - Each Phase 2 increment has an owner, rollback path, and acceptance tests.
 
@@ -213,23 +316,25 @@ The architecture review should explicitly challenge these choices:
 
 1. Is EC2 the right Phase 1 runtime, or is App Runner worth its managed HTTPS
    boundary despite the persistence refactor it would require?
-2. Should Phase 2 use ECS/Fargate or App Runner for the public Workbench?
-3. Does the event contract require Kinesis ordering/replay, or is EventBridge
-   routing sufficient?
-4. Is ElastiCache/Valkey enough for ephemeral call state, or is durable
-   MemoryDB justified?
-5. Should structured guidance use OpenSearch Serverless or a Bedrock Knowledge
-   Base, and what evidence must be stored for every result?
-6. Should the analytical store be RDS PostgreSQL or Aurora PostgreSQL, given
-   the account credits and the intended idle schedule?
-7. What is the smallest acceptable identity boundary for an agent versus a
+2. Does the public runtime require Fargate's worker/task control, or do the
+   stateless HTTP conditions make App Runner the simpler boundary?
+3. Which state and decision contracts must pass the two-worker race tests
+   before any runtime migration?
+4. Does the durable-store baseline need only RDS PostgreSQL, or does measured
+   availability, scale, or cost evidence justify Aurora PostgreSQL?
+5. Is hot state rebuildable enough to avoid a cache, or does measured latency
+   justify ElastiCache/Valkey? Is a durable in-memory authority actually
+   required before considering MemoryDB?
+6. For each event type, are ordering/replay, job retry, notification routing,
+   or UI recovery the actual requirement, and which service satisfies it?
+7. Should guidance use direct OpenSearch control or managed Knowledge Bases,
+   and how will permissions, versions, deletion, and citations be proven?
+8. Which AI adapter is needed next: Bedrock explanation, Transcribe audio, or
+   evaluated Comprehend enrichment? Is there a real requirement for Polly?
+9. What is the smallest acceptable identity boundary for an agent versus a
    supervisor, and how will tenant scope be enforced end to end?
-8. Which services may scale to zero, and how will cold-start behavior affect
-   the live-assistance latency budget?
-9. What must be redacted from CloudWatch, traces, event streams, and model
-   requests before any move beyond synthetic data?
-10. Which resources are permanent foundations and which must be provisioned
-    only for a bounded test window?
+10. What must be redacted from logs, traces, event payloads, audio, and model
+    requests, and what are the three-mode cost and teardown results?
 
 ## 8. Deliverables
 
