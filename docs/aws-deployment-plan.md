@@ -90,3 +90,19 @@ conditional follow-up increments.
   digest check resolves the image ID from the running container and inspects
   the image object; `RepoDigests` is not a container field.
 - The README documents deployment, teardown, and the non-production boundary.
+
+## Observed Phase 1 account checks
+
+The following read-only checks were run on 2026-10-16 after the image rollout.
+They are account evidence for this demo, not a promise of continuing zero cost:
+
+- Cost Explorer returned a current-month-to-date `UnblendedCost` of
+  `-0.0000000183 USD` for 2026-10-01 through 2026-10-17. The negative value is
+  consistent with an account credit or adjustment; it must not be interpreted
+  as proof that future usage is free.
+- The Free Tier API returned 13 account usage records. The returned snapshot did
+  not expose an EC2, EBS, or ECR allowance, so coverage of those resources is
+  not treated as verified. Billing and Free Tier usage should continue to be
+  checked in the AWS console while the demo remains deployed.
+- The demo remains synthetic-only and should be destroyed when it is not needed;
+  the retained ECR repository and images are a separate storage-cost decision.
