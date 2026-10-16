@@ -70,6 +70,12 @@ and instance stop/start operations while the demo stack and Elastic IP exist.
 The host is managed through Systems Manager; no inbound SSH rule or SSH key is
 created.
 
+The current deployed Phase One URL is
+[`http://98.95.194.236`](http://98.95.194.236). The Security Group allows HTTP
+only from the operator-provided CIDR and rejects an open `0.0.0.0/0` rule. Do
+not widen the CIDR for a customer demo without adding HTTPS, real identity,
+and application-level rate limiting.
+
 Treat a successful CloudFormation deployment as infrastructure creation, not
 as proof that the demo is ready. Complete the following smoke check before
 sharing the URL:

@@ -56,3 +56,10 @@ See [docs/architecture.md](docs/architecture.md), [docs/data-contracts.md](docs/
 ## AWS demo deployment
 
 The first cloud deployment is intentionally a single-host demo target: Docker on a `t3.micro` EC2 instance, an encrypted EBS data volume for SQLite, ECR for the image, CloudWatch Logs, Systems Manager access, and a stack-owned Elastic IP. It preserves the local reference-slice semantics while providing a stable HTTP endpoint for synthetic-data demonstrations for the lifetime of the demo stack. It is not a production deployment. See [docs/aws-deployment-plan.md](docs/aws-deployment-plan.md) and [infra/aws/README.md](infra/aws/README.md) for the deployment and teardown procedure.
+
+Current Phase One demo endpoint: [http://98.95.194.236](http://98.95.194.236)
+
+The address is backed by the deployed Elastic IP and remains stable while the
+demo stack exists. Network access is restricted by the AWS Security Group to
+the operator-provided CIDR; the endpoint is not open to arbitrary public
+traffic. The URL is released if the demo stack is destroyed and recreated.
