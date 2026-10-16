@@ -86,5 +86,7 @@ conditional follow-up increments.
 - The checked-in SSM update path replaces the running image and reports remote
   command failure instead of treating command submission as deployment success.
 - After an image update, the same health, scenario, and completed-history
-  smoke must pass, and the actual running image digest must be recorded.
+  smoke must pass, and the actual running image digest must be recorded. The
+  digest check resolves the image ID from the running container and inspects
+  the image object; `RepoDigests` is not a container field.
 - The README documents deployment, teardown, and the non-production boundary.
