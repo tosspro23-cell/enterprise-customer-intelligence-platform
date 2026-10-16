@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from backend.adapters.llm.azure_openai import AzureOpenAIExplanationAdapter
 from backend.adapters.llm.base import ExplanationRequest, ExplanationResult
+from backend.adapters.llm.bedrock import BedrockExplanationAdapter
 from backend.services.explanation_validator import ExplanationValidator
 
 
@@ -81,23 +81,36 @@ def test_validator_rejects_numeric_claim_when_no_fee_is_approved() -> None:
 
 
 @pytest.mark.asyncio
-async def test_azure_adapter_offloads_synchronous_http(monkeypatch: pytest.MonkeyPatch) -> None:
-    adapter = AzureOpenAIExplanationAdapter(
-        endpoint="https://example.invalid",
-        api_key="test-key",
-        deployment="test-deployment",
-    )
-    calls: list[object] = []
+async def test_bedrock_adapter_offloads_synchronous_sdk_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = BedrockExplanationAdapter(client=object(), model_id="test-model")
+    calls: list[tuple[object, tuple[object, ...]]] = []
 
     async def fake_to_thread(function, *args):
-        calls.append(function)
-        return {
-            "choices": [{"message": {"content": "Use the approved guidance."}}],
-        }
+        calls.append((function, args))
+        return "Use the approved guidance."
 
     monkeypatch.setattr(asyncio, "to_thread", fake_to_thread)
 
     result = await adapter.explain(_request())
 
     assert result.text == "Use the approved guidance."
-    assert calls == [adapter._read_json]
+    assert calls[0][0] == adapter._converse
+
+
+@pytest.mark.asyncio
+async def test_bedrock_adapter_maps_converse_response_to_bounded_facts() -> None:
+    class FakeClient:
+        def converse(self, **kwargs):
+            assert kwargs["modelId"] == "test-model"
+            assert kwargs["inferenceConfig"] == {"temperature": 0, "maxTokens": 256}
+            return {"output": {"message": {"content": [{"text": "Use the guidance."}]}}}
+
+    adapter = BedrockExplanationAdapter(client=FakeClient(), model_id="test-model")
+
+    result = await adapter.explain(_request())
+
+    assert result.text == "Use the guidance."
+    assert result.model_name == "amazon-bedrock"
+    assert result.structured_facts["monthly_fee"] == 2.99

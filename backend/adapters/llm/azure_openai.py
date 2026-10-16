@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 from urllib import request as urlrequest
@@ -16,11 +15,6 @@ class AzureOpenAIExplanationAdapter(ExplanationAdapter):
         self.api_key = api_key or os.getenv("AZURE_OPENAI_API_KEY", "")
         self.deployment = deployment or os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
         self.api_version = api_version or os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
-
-    @staticmethod
-    def _read_json(req: urlrequest.Request) -> dict:
-        with urlrequest.urlopen(req, timeout=20) as response:
-            return json.loads(response.read().decode())
 
     async def explain(self, request: ExplanationRequest) -> ExplanationResult:
         if not self.endpoint or not self.api_key or not self.deployment:
@@ -49,9 +43,8 @@ class AzureOpenAIExplanationAdapter(ExplanationAdapter):
         url = f"{self.endpoint.rstrip('/')}/openai/deployments/{self.deployment}/chat/completions?api-version={self.api_version}"
         req = urlrequest.Request(url, data=body, headers={"api-key": self.api_key, "Content-Type": "application/json"})
         try:
-            # urllib is synchronous. Keep it off the event loop so one slow
-            # model response cannot block unrelated calls or health checks.
-            payload = await asyncio.to_thread(self._read_json, req)
+            with urlrequest.urlopen(req, timeout=20) as response:
+                payload = json.loads(response.read().decode())
         except Exception as exc:  # pragma: no cover - requires external service
             raise LLMUnavailable(str(exc)) from exc
         text = payload["choices"][0]["message"]["content"]
