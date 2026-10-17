@@ -63,3 +63,9 @@ The address is backed by the deployed Elastic IP and remains stable while the
 demo stack exists. Network access is restricted by the AWS Security Group to
 the operator-provided CIDR; the endpoint is not open to arbitrary public
 traffic. The URL is released if the demo stack is destroyed and recreated.
+
+The current Phase Two Bedrock canary evidence is documented in
+[docs/phase2-bedrock-canary-results-20261017.md](docs/phase2-bedrock-canary-results-20261017.md).
+It compares three accessible profiles and uses Amazon Nova Micro as the
+preliminary Bedrock default; the application remains deterministic unless the
+deployment explicitly enables the Bedrock provider.

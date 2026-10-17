@@ -77,6 +77,26 @@ AWS_SHARED_CREDENTIALS_FILE=/Users/ting/.aws/credentials \
   --output /tmp/bedrock-canary-results.json
 ```
 
-The next acceptance step is a live EC2 canary using the same adapter and the
-Nova Micro profile, followed by health, scenario, decision-evidence, and
-rollback checks. The canary must remain synthetic-only.
+The live canary must remain synthetic-only.
+
+## Live canary evidence
+
+The live canary was subsequently enabled on the existing Phase One host with
+the CI-validated image tag `81e3a8e`.
+
+- CloudFormation status: `UPDATE_COMPLETE`
+- EC2 instance: unchanged from Phase One
+- Endpoint: unchanged Elastic-IP-backed demo URL
+- Health: `llm_provider=bedrock`, `llm_model_id=us.amazon.nova-micro-v1:0`
+- Scenarios: all three remained available
+- Image digest: `sha256:bfef76a5e6f43f7a1d76c05422fe5a18920370812bea76bcd92fa31040b4eec8`
+- Synthetic end-to-end call: transcript → complaint resolution → commercial
+  decision completed with `PUBLISH_COMMITTED`
+- Trace stages included successful `llm_explanation`,
+  `explanation_validation`, and `commercial_publication`; the final
+  publication trace recorded `model_version=us.amazon.nova-micro-v1:0`
+
+This proves the real-model adapter is wired through the deployed application
+decision path. It does not change the boundary that the application is still a
+single-host synthetic demo and that the local/default provider remains
+deterministic unless the canary environment explicitly enables Bedrock.

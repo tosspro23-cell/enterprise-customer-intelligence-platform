@@ -1,16 +1,15 @@
-# Phase 2 increment 01: bounded model boundary
+# Phase 2 increment 01: bounded model boundary and Bedrock canary
 
 ## Decision
 
 The first AWS Phase 2 increment strengthens the explanation adapter boundary
 while adding a bounded Bedrock adapter. The deterministic adapter remains the
-default and continues to be the reference for contract tests.
+local/default path and continues to be the reference for contract tests; the
+real provider is enabled only for an explicit, reversible AWS canary.
 
-This ordering follows the cross-cloud comparison: the Azure repository already
-demonstrates a real-model adapter, while the AWS deployment currently proves
-only the deterministic path. The useful AWS step is therefore a small
-Bedrock Runtime adapter behind the existing port, not a copy of the Azure
-service inventory.
+The useful AWS step is therefore a small Bedrock Runtime adapter behind the
+existing port, not a broad service inventory or a replacement of the existing
+business-policy boundary.
 
 ## Scope
 
@@ -21,6 +20,10 @@ service inventory.
 - Reject explanation prose that introduces an amount other than the approved
   fee, a currency other than the approved currency, or unsupported financial
   promises such as guaranteed returns.
+- Compare at least three accessible Bedrock profiles with bounded concurrency,
+  latency measurements, and the existing explanation validator.
+- Enable the selected profile on the existing synthetic EC2 demo only after
+  CI, image-digest, health, scenario, and trace checks pass.
 - Keep business facts, eligibility, evidence references, and publication state
   deterministic and authoritative.
 - Add local tests for accepted claims, rejected claims, and the non-blocking
@@ -28,8 +31,8 @@ service inventory.
 
 ## Explicit non-goals
 
-- No Bedrock deployment or real-model enablement on the Phase One endpoint.
-- No change to the default deterministic model path.
+- No production-data enablement, public identity boundary, or production SLA.
+- No change to the local/default deterministic model path.
 - No PostgreSQL, cache, event bus, Transcribe, Polly, or Fargate resources.
 - No claim that prose validation proves arbitrary natural-language truth.
 
@@ -42,7 +45,11 @@ The increment is complete when:
    claims while accepting the approved facts; and
 3. the Bedrock adapter tests prove that the synchronous SDK call is delegated
    through `asyncio.to_thread` and that a Converse response is mapped into the
-   bounded explanation result.
+   bounded explanation result;
+4. the three-model benchmark records success, validation, rubric, and latency
+   results, with a hard gate for the selected default; and
+5. the AWS canary proves the deployed health configuration and records a
+   successful real-model decision trace with synthetic data.
 
 The next increment should define the persistence port and PostgreSQL migration
 contract. It must precede Fargate or any multi-instance deployment.
