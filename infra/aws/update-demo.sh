@@ -44,7 +44,8 @@ print(json.dumps({"commands": [
     (
         "docker run --detach --name customer-intelligence --restart unless-stopped "
         "--publish 80:8765 --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db "
-        f"--env LLM_PROVIDER={llm_provider} --env BEDROCK_MODEL_ID={bedrock_model_id} "
+        f"--env AWS_REGION={region} --env LLM_PROVIDER={llm_provider} "
+        f"--env BEDROCK_MODEL_ID={bedrock_model_id} "
         "--volume /var/lib/customer-intelligence:/var/lib/customer-intelligence "
         f"--log-driver awslogs --log-opt awslogs-region={region} "
         f"--log-opt awslogs-group={log_group_name} "
