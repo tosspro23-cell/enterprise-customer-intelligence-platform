@@ -14,3 +14,5 @@ build/
 *.egg-info/
 docs/evidence/runs/*
 !docs/evidence/runs/.gitkeep
+infra/aws/cdk.out/
+infra/aws/cdk.context.json
