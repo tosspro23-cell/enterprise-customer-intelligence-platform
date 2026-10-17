@@ -21,11 +21,15 @@ platform.store.close()
 # Re-open with the configured path after construction so the app has durable local state.
 from backend.adapters.persistence.sqlite import SQLiteStore  # noqa: E402
 from backend.adapters.llm.azure_openai import AzureOpenAIExplanationAdapter  # noqa: E402
+from backend.adapters.llm.bedrock import BedrockExplanationAdapter  # noqa: E402
 from backend.adapters.llm.fake import DeterministicExplanationAdapter  # noqa: E402
 
 platform.store = SQLiteStore(DATABASE_PATH)
 platform.traces.store = platform.store
-if os.getenv("LLM_PROVIDER", "fake").lower() in {"azure", "azure_openai"}:
+llm_provider = os.getenv("LLM_PROVIDER", "fake").lower()
+if llm_provider in {"bedrock", "aws_bedrock"}:
+    platform.llm = BedrockExplanationAdapter()
+elif llm_provider in {"azure", "azure_openai"}:
     platform.llm = AzureOpenAIExplanationAdapter()
 else:
     platform.llm = DeterministicExplanationAdapter()
