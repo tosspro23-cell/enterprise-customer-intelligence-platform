@@ -82,7 +82,12 @@ async def index():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "mode": "local-reference"}
+    return {
+        "status": "ok",
+        "mode": "local-reference",
+        "llm_provider": llm_provider,
+        "llm_model_id": getattr(platform.llm, "model_id", None),
+    }
 
 
 @app.get("/api/demo/scenario")
