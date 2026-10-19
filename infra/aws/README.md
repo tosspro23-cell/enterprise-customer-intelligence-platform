@@ -72,8 +72,11 @@ created.
 
 The demo host AMI is pinned in the CDK stack. This is intentional: the public
 Amazon Linux `latest` SSM parameter can advance between deployments and cause
-CloudFormation to replace the single host. Change the AMI only as a separate,
-reviewed operation, with a data-preservation and rollback plan.
+CloudFormation to replace the single host. The repository includes the pinned
+Phase One AMI for `us-east-1`; for another region, pass a region-specific AMI
+with `-c demo_ami_id=<regional-ami-id>` or `CCCP_DEMO_AMI_ID`. Change the AMI
+only as a separate, reviewed operation, with a data-preservation and rollback
+plan.
 
 The current deployed Phase One URL is
 [`http://98.95.194.236`](http://98.95.194.236). The Security Group allows HTTP

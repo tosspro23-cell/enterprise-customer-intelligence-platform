@@ -124,7 +124,7 @@ def _validator_result(case: BenchmarkCase, result) -> tuple[bool, str | None]:
 
 def _rubric_pass(case: BenchmarkCase, text: str) -> bool:
     normalized = text.casefold()
-    return len(text.strip()) >= 20 and any(
+    return len(text.strip()) >= 20 and all(
         term.casefold() in normalized for term in case.required_terms
     )
 

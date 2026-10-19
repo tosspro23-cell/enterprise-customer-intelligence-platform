@@ -23,12 +23,13 @@ from aws_cdk import (
 from constructs import Construct
 
 
-# The Phase One host currently runs this us-east-1 AMI. Keep the value pinned
-# so an unrelated stack update (for example, an IAM-only canary change) does
-# not replace the host when the public SSM "latest" parameter advances.
-# Refresh this deliberately with -c demo_ami_id=... after reviewing the
-# resulting replacement and data-preservation plan.
-DEFAULT_DEMO_AMI_ID = "ami-0ed59cbb87dfa8dba"
+# Keep the Phase One AMI pinned so an unrelated stack update (for example, an
+# IAM-only canary change) does not replace the host when the public SSM
+# "latest" parameter advances. Add an explicit context value or
+# CCCP_DEMO_AMI_ID before deploying to another region.
+DEFAULT_DEMO_AMI_IDS = {
+    "us-east-1": "ami-0ed59cbb87dfa8dba",
+}
 
 
 class CustomerIntelligenceRepositoryStack(Stack):
@@ -66,13 +67,19 @@ class CustomerIntelligenceDemoStack(Stack):
         repository: ecr.Repository,
         allowed_cidr: Optional[str],
         image_tag: str,
+        deployment_region: str,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        ami_id = self.node.try_get_context("demo_ami_id") or os.getenv(
-            "CCCP_DEMO_AMI_ID", DEFAULT_DEMO_AMI_ID
-        )
+        ami_id = self.node.try_get_context("demo_ami_id") or os.getenv("CCCP_DEMO_AMI_ID")
+        if not ami_id:
+            ami_id = DEFAULT_DEMO_AMI_IDS.get(deployment_region)
+        if not ami_id:
+            raise ValueError(
+                f"No pinned demo AMI is configured for {deployment_region}; "
+                "set -c demo_ami_id=<regional-ami-id> or CCCP_DEMO_AMI_ID."
+            )
         ami_id_parameter = CfnParameter(
             self,
             "AmiId",
@@ -202,7 +209,7 @@ class CustomerIntelligenceDemoStack(Stack):
             instance_type=ec2.InstanceType("t3.micro"),
             credit_specification=ec2.CpuCredits.STANDARD,
             machine_image=ec2.MachineImage.generic_linux(
-                {"us-east-1": ami_id_parameter.value_as_string}
+                {deployment_region: ami_id_parameter.value_as_string}
             ),
             security_group=security_group,
             role=role,
