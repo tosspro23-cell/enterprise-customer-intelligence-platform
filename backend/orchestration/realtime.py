@@ -16,6 +16,7 @@ from backend.adapters.enterprise.mock_propensity_service import (
 from backend.adapters.guidance.local_index import GuidanceResult, LocalGuidanceIndex
 from backend.adapters.llm.base import ExplanationRequest, LLMUnavailable
 from backend.adapters.llm.fake import DeterministicExplanationAdapter
+from backend.adapters.persistence.port import PersistenceStore
 from backend.adapters.persistence.sqlite import SQLiteStore
 from backend.domain.auth import AuthorizationError, AuthorizationRegistry
 from backend.domain.models import (
@@ -65,7 +66,7 @@ class Platform:
     def __init__(
         self,
         *,
-        store: SQLiteStore | None = None,
+        store: PersistenceStore | None = None,
         clock: Clock | None = None,
         registry: AuthorizationRegistry | None = None,
         customer_api: MockCustomerAPI | None = None,

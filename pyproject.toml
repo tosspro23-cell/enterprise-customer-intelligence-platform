@@ -25,6 +25,9 @@ aws-runtime = [
 auth-runtime = [
   "PyJWT[crypto]>=2.9,<3",
 ]
+postgres-runtime = [
+  "psycopg[binary]>=3.2,<4",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
