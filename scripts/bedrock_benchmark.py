@@ -11,9 +11,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import boto3
-from botocore.config import Config
-
 from backend.adapters.llm.base import ExplanationRequest
 from backend.adapters.llm.bedrock import BedrockExplanationAdapter
 from backend.services.explanation_validator import ExplanationValidator
@@ -130,6 +127,9 @@ def _rubric_pass(case: BenchmarkCase, text: str) -> bool:
 
 
 def _client(profile: str | None, region: str):
+    import boto3
+    from botocore.config import Config
+
     session = boto3.Session(profile_name=profile, region_name=region)
     return session.client(
         "bedrock-runtime",
