@@ -7,8 +7,12 @@ an encrypted EBS root volume.
 
 It is suitable for synthetic-data demos and cloud testing. It is not a
 production topology. The application still uses the demo principal model and
-does not yet provide real enterprise identity, TLS, multi-instance state
-consistency, or a managed relational/event store.
+the deployed endpoint remains HTTP-only; it does not yet provide an enabled
+enterprise identity boundary, TLS, multi-instance state consistency, or a
+managed relational/event store. The application code now has an explicit,
+opt-in Cognito/OIDC JWT mode and a process-local request budget, but those
+controls are not enabled on the current demo until an HTTPS edge and token
+acquisition flow are verified.
 
 ## Prerequisites
 
@@ -160,6 +164,27 @@ canary decision, not a production SLA or a large-scale load test. Keep all
 benchmark and canary inputs synthetic until authentication, TLS, retention,
 deletion, and audit controls are implemented.
 
+## Opt-in identity boundary
+
+The checked-in update path can pass the application identity configuration to
+the container, but do not enable it on the current direct HTTP endpoint:
+
+```bash
+export AUTH_MODE=cognito
+export COGNITO_ISSUER="https://cognito-idp.<region>.amazonaws.com/<user-pool-id>"
+export COGNITO_AUDIENCE="<app-client-id>"
+export CORS_ALLOWED_ORIGINS="https://<verified-frontend-origin>"
+export AUTH_CUSTOMER_IDS="C001,C002"  # synthetic fallback only
+export RATE_LIMIT_REQUESTS_PER_MINUTE=120
+./infra/aws/update-demo.sh
+```
+
+The command is intentionally fail-closed when issuer, audience, or a concrete
+CORS origin is missing. `AUTH_CUSTOMER_IDS` is not a substitute for a
+tenant-aware identity mapping. First provide an HTTPS edge and verify a real
+token acquisition and authorization test; until then, keep `AUTH_MODE=demo`
+and the existing restricted CIDR.
+
 ## Teardown and cost control
 
 To stop compute charges after a demo, destroy the demo stack. Stopping the
@@ -183,7 +208,8 @@ not proof that a resource is cost-free.
 
 ## Next cloud increments
 
-1. Add a real authentication boundary and HTTPS before any non-synthetic data.
+1. Choose and prove an HTTPS edge plus Cognito/OIDC token acquisition before
+   enabling the opt-in identity mode or any non-synthetic data.
 2. Replace SQLite with a managed persistence adapter and add migration tests.
 3. Move the container to ECS/Fargate or App Runner once multi-instance
    semantics and operational telemetry are ready.
