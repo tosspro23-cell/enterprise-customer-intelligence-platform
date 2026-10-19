@@ -10,10 +10,32 @@ set -euo pipefail
 
 LLM_PROVIDER="${LLM_PROVIDER:-fake}"
 BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-us.amazon.nova-micro-v1:0}"
+AUTH_MODE="${AUTH_MODE:-demo}"
+AUTH_CUSTOMER_IDS="${AUTH_CUSTOMER_IDS:-C001,C002}"
+COGNITO_ISSUER="${COGNITO_ISSUER:-}"
+COGNITO_AUDIENCE="${COGNITO_AUDIENCE:-}"
+COGNITO_DEFAULT_TENANT_ID="${COGNITO_DEFAULT_TENANT_ID:-demo-tenant}"
+COGNITO_DEFAULT_PURPOSE="${COGNITO_DEFAULT_PURPOSE:-customer-service}"
+CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-*}"
+RATE_LIMIT_REQUESTS_PER_MINUTE="${RATE_LIMIT_REQUESTS_PER_MINUTE:-120}"
 case "$LLM_PROVIDER" in
   fake|bedrock) ;;
   *) echo "LLM_PROVIDER must be fake or bedrock" >&2; exit 1 ;;
 esac
+case "$AUTH_MODE" in
+  demo) ;;
+  cognito)
+    if [[ -z "$COGNITO_ISSUER" || -z "$COGNITO_AUDIENCE" || -z "$CORS_ALLOWED_ORIGINS" || "$CORS_ALLOWED_ORIGINS" == "*" ]]; then
+      echo "COGNITO_ISSUER, COGNITO_AUDIENCE, and a concrete CORS_ALLOWED_ORIGINS value are required for AUTH_MODE=cognito" >&2
+      exit 1
+    fi
+    ;;
+  *) echo "AUTH_MODE must be demo or cognito" >&2; exit 1 ;;
+esac
+if ! [[ "$RATE_LIMIT_REQUESTS_PER_MINUTE" =~ ^[1-9][0-9]*$ ]]; then
+  echo "RATE_LIMIT_REQUESTS_PER_MINUTE must be a positive integer" >&2
+  exit 1
+fi
 
 registry_host="${REPOSITORY_URI%%/*}"
 repository_name="${REPOSITORY_URI#*/}"
@@ -31,11 +53,26 @@ if [[ -z "$expected_digest" || "$expected_digest" == "None" ]]; then
   exit 1
 fi
 
-commands_json="$(python3 - "$AWS_REGION" "$registry_host" "$image_uri" "$LOG_GROUP_NAME" "$LLM_PROVIDER" "$BEDROCK_MODEL_ID" <<'PY'
+commands_json="$(python3 - "$AWS_REGION" "$registry_host" "$image_uri" "$LOG_GROUP_NAME" "$LLM_PROVIDER" "$BEDROCK_MODEL_ID" "$AUTH_MODE" "$AUTH_CUSTOMER_IDS" "$COGNITO_ISSUER" "$COGNITO_AUDIENCE" "$COGNITO_DEFAULT_TENANT_ID" "$COGNITO_DEFAULT_PURPOSE" "$CORS_ALLOWED_ORIGINS" "$RATE_LIMIT_REQUESTS_PER_MINUTE" <<'PY'
 import json
 import sys
 
-region, registry_host, image_uri, log_group_name, llm_provider, bedrock_model_id = sys.argv[1:]
+(
+    region,
+    registry_host,
+    image_uri,
+    log_group_name,
+    llm_provider,
+    bedrock_model_id,
+    auth_mode,
+    auth_customer_ids,
+    cognito_issuer,
+    cognito_audience,
+    cognito_default_tenant_id,
+    cognito_default_purpose,
+    cors_allowed_origins,
+    rate_limit_requests_per_minute,
+) = sys.argv[1:]
 print(json.dumps({"commands": [
     "set -euo pipefail",
     f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_host}",
@@ -46,6 +83,12 @@ print(json.dumps({"commands": [
         "--publish 80:8765 --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db "
         f"--env AWS_REGION={region} --env LLM_PROVIDER={llm_provider} "
         f"--env BEDROCK_MODEL_ID={bedrock_model_id} "
+        f"--env AUTH_MODE={auth_mode} --env AUTH_CUSTOMER_IDS={auth_customer_ids} "
+        f"--env COGNITO_ISSUER={cognito_issuer} --env COGNITO_AUDIENCE={cognito_audience} "
+        f"--env COGNITO_DEFAULT_TENANT_ID={cognito_default_tenant_id} "
+        f"--env COGNITO_DEFAULT_PURPOSE={cognito_default_purpose} "
+        f"--env CORS_ALLOWED_ORIGINS={cors_allowed_origins} "
+        f"--env RATE_LIMIT_REQUESTS_PER_MINUTE={rate_limit_requests_per_minute} "
         "--volume /var/lib/customer-intelligence:/var/lib/customer-intelligence "
         f"--log-driver awslogs --log-opt awslogs-region={region} "
         f"--log-opt awslogs-group={log_group_name} "

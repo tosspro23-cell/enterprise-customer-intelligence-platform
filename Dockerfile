@@ -11,7 +11,7 @@ COPY backend ./backend
 COPY frontend ./frontend
 COPY data ./data
 
-RUN python -m pip install '.[aws-runtime]' \
+RUN python -m pip install '.[aws-runtime,auth-runtime]' \
     && useradd --create-home --uid 10001 app \
     && mkdir -p /app/data \
     && chown -R app:app /app

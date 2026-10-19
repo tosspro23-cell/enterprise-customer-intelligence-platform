@@ -24,11 +24,46 @@ def test_update_script_verifies_the_digest_of_the_running_image() -> None:
     assert '--parameters "$verify_parameters"' in script
     assert 'LLM_PROVIDER="${LLM_PROVIDER:-fake}"' in script
     assert 'BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-us.amazon.nova-micro-v1:0}"' in script
+    assert 'AUTH_MODE="${AUTH_MODE:-demo}"' in script
+    assert "AUTH_MODE=cognito" in script
+    assert "--env COGNITO_ISSUER={cognito_issuer}" in script
+    assert "--env RATE_LIMIT_REQUESTS_PER_MINUTE={rate_limit_requests_per_minute}" in script
     assert "--env AWS_REGION={region}" in script
     assert (
         "docker inspect --format '{{index .RepoDigests 0}}' customer-intelligence"
         not in script
     )
+
+
+def test_update_script_rejects_cognito_without_transport_configuration() -> None:
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "AUTH_MODE": "cognito",
+            "AWS_REGION": "us-east-1",
+            "INSTANCE_ID": "i-test",
+            "REPOSITORY_URI": "registry.example/customer-intelligence",
+            "IMAGE_TAG": "test-tag",
+            "LOG_GROUP_NAME": "/demo/customer-intelligence",
+        }
+    )
+    for name in (
+        "COGNITO_ISSUER",
+        "COGNITO_AUDIENCE",
+        "CORS_ALLOWED_ORIGINS",
+    ):
+        environment.pop(name, None)
+
+    result = subprocess.run(
+        ["bash", str(UPDATE_SCRIPT)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+    assert result.returncode == 1
+    assert "concrete CORS_ALLOWED_ORIGINS" in result.stderr
 
 
 FAKE_AWS = r'''#!/usr/bin/env python3

@@ -12,6 +12,13 @@ from fastapi.staticfiles import StaticFiles
 from backend.api.schemas import StartCallRequest, TranscriptRequest
 from backend.domain.auth import AuthorizationError
 from backend.orchestration.realtime import ConflictError, NotFoundError, Platform, PlatformError
+from backend.security.authentication import (
+    AuthenticationError,
+    AuthenticatedPrincipal,
+    CognitoJWTAuthenticator,
+)
+from backend.security.middleware import RateLimitMiddleware
+from backend.security.rate_limit import InMemoryRateLimiter
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -47,18 +54,112 @@ platform.registry.register(
 )
 
 app = FastAPI(title="Customer Intelligence Platform", version="0.1.0")
+auth_mode = os.getenv("AUTH_MODE", "demo").strip().lower()
+if auth_mode not in {"demo", "cognito"}:
+    raise RuntimeError("AUTH_MODE must be demo or cognito")
+
+
+def _configured_customer_ids() -> frozenset[str]:
+    customer_ids = frozenset(
+        item.strip()
+        for item in os.getenv("AUTH_CUSTOMER_IDS", "C001,C002").split(",")
+        if item.strip()
+    )
+    if not customer_ids:
+        raise RuntimeError("AUTH_CUSTOMER_IDS must contain at least one customer ID")
+    return customer_ids
+
+
+_cognito_authenticator = None
+if auth_mode == "cognito":
+    _cognito_authenticator = CognitoJWTAuthenticator(
+        issuer=os.getenv("COGNITO_ISSUER", ""),
+        audience=os.getenv("COGNITO_AUDIENCE", ""),
+        default_customer_ids=_configured_customer_ids(),
+        default_tenant_id=os.getenv("COGNITO_DEFAULT_TENANT_ID", "demo-tenant"),
+        default_purpose_of_use=os.getenv("COGNITO_DEFAULT_PURPOSE", "customer-service"),
+    )
+
+
+def _cors_origins() -> list[str]:
+    configured = [item.strip() for item in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if item.strip()]
+    if configured:
+        return configured
+    if auth_mode == "cognito":
+        raise RuntimeError("CORS_ALLOWED_ORIGINS is required when AUTH_MODE=cognito")
+    return ["*"]
+
+
+def _rate_limit_requests() -> int:
+    raw = os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120")
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError("RATE_LIMIT_REQUESTS_PER_MINUTE must be an integer") from exc
+    if value < 1:
+        raise RuntimeError("RATE_LIMIT_REQUESTS_PER_MINUTE must be positive")
+    return value
+
+
+app.add_middleware(
+    RateLimitMiddleware,
+    limiter=InMemoryRateLimiter(max_requests=_rate_limit_requests()),
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins(),
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Principal-ID"],
+    allow_credentials=auth_mode == "cognito",
 )
 app.mount("/static", StaticFiles(directory=str(ROOT / "frontend")), name="static")
 
 
-def get_auth(x_principal_id: str = Header(default="demo-agent")):
+def _context_for_principal(principal: AuthenticatedPrincipal):
     try:
-        return platform.registry.current_for(x_principal_id)
+        current = platform.registry.get(principal.principal_id)
+    except AuthorizationError:
+        current = None
+    if current and (
+        current.tenant_id == principal.tenant_id
+        and current.roles == principal.roles
+        and current.permissions == principal.permissions
+        and current.allowed_customer_ids == principal.allowed_customer_ids
+        and current.purpose_of_use == principal.purpose_of_use
+    ):
+        return current
+    return platform.registry.register(
+        principal.principal_id,
+        permissions=set(principal.permissions),
+        allowed_customer_ids=set(principal.allowed_customer_ids),
+        roles=principal.roles,
+        tenant_id=principal.tenant_id,
+        purpose_of_use=principal.purpose_of_use,
+    )
+
+
+def get_auth(
+    authorization: str | None = Header(default=None),
+    x_principal_id: str | None = Header(default=None),
+):
+    if auth_mode == "cognito":
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=401,
+                detail="Bearer authentication is required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        try:
+            principal = _cognito_authenticator.authenticate(authorization[7:])
+            return _context_for_principal(principal)
+        except AuthenticationError as exc:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid bearer token",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from exc
+    try:
+        return platform.registry.current_for(x_principal_id or "demo-agent")
     except AuthorizationError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
 
@@ -91,14 +192,14 @@ async def health():
 
 
 @app.get("/api/demo/scenario")
-async def demo_scenario():
+async def demo_scenario(auth=Depends(get_auth)):
     from backend.services.scenario import load_demo_scenario
 
     return load_demo_scenario()
 
 
 @app.get("/api/demo/scenarios")
-async def demo_scenarios():
+async def demo_scenarios(auth=Depends(get_auth)):
     from backend.services.scenario import load_demo_scenarios
 
     return {"scenarios": load_demo_scenarios()}
