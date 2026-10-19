@@ -29,6 +29,9 @@ synthetic-only and is not an enterprise identity mechanism.
 - an explicit customer scope claim (`custom:customer_ids`) when the identity
   provider has one. `AUTH_CUSTOMER_IDS` is only a synthetic fallback and is not
   a production tenant authorization design;
+- a tenant claim, when present, that matches the single configured tenant. The
+  current SQLite schema does not support cross-tenant history, so a different
+  tenant claim is rejected rather than being treated as isolated data;
 - concrete `CORS_ALLOWED_ORIGINS`; wildcard CORS is rejected in this mode.
 
 Health remains unauthenticated for a load balancer or operator probe. Scenario

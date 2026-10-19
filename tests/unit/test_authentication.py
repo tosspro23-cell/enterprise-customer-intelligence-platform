@@ -18,6 +18,7 @@ def test_claims_translate_to_scoped_agent_principal() -> None:
             "custom:customer_ids": "C001, C009",
         },
         default_customer_ids=frozenset({"C001"}),
+        default_tenant_id="tenant-a",
     )
 
     assert principal.principal_id == "oidc:user-123"
@@ -32,6 +33,19 @@ def test_claims_require_a_supported_role() -> None:
         principal_from_claims(
             {"sub": "user-123", "cognito:groups": ["billing"]},
             default_customer_ids=frozenset({"C001"}),
+        )
+
+
+def test_claims_cannot_introduce_a_second_tenant_into_single_tenant_store() -> None:
+    with pytest.raises(AuthenticationError, match="unsupported tenant scope"):
+        principal_from_claims(
+            {
+                "sub": "user-123",
+                "cognito:groups": ["supervisor"],
+                "custom:tenant_id": "tenant-b",
+            },
+            default_customer_ids=frozenset({"C001"}),
+            default_tenant_id="tenant-a",
         )
 
 

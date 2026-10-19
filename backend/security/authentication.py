@@ -75,7 +75,9 @@ def principal_from_claims(
     The JWT signature, issuer, audience, and expiry must be validated before
     this function is called. Customer scope is taken from an explicit custom
     claim when present; the configured default is only a synthetic-demo
-    fallback and must not be used as a production tenant authorization model.
+    fallback. The current SQLite schema is single-tenant, so a tenant claim
+    must match the configured tenant instead of being treated as a
+    cross-tenant authorization boundary.
     """
 
     subject = str(claims.get("sub", "")).strip()
@@ -100,12 +102,15 @@ def principal_from_claims(
     if "supervisor" in roles:
         permissions.update(SUPERVISOR_PERMISSIONS)
 
+    tenant_id = str(claims.get("custom:tenant_id", default_tenant_id))
+    if tenant_id != default_tenant_id:
+        raise AuthenticationError("unsupported tenant scope")
     customer_ids = _claim_customer_ids(claims) or default_customer_ids
     if not customer_ids:
         raise AuthenticationError("principal has no customer scope")
     return AuthenticatedPrincipal(
         principal_id=f"oidc:{subject}",
-        tenant_id=str(claims.get("custom:tenant_id", default_tenant_id)),
+        tenant_id=tenant_id,
         roles=roles,
         permissions=frozenset(permissions),
         allowed_customer_ids=customer_ids,

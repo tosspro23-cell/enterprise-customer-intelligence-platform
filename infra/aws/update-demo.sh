@@ -62,6 +62,7 @@ fi
 
 commands_json="$(python3 - "$AWS_REGION" "$registry_host" "$image_uri" "$LOG_GROUP_NAME" "$LLM_PROVIDER" "$BEDROCK_MODEL_ID" "$AUTH_MODE" "$AUTH_CUSTOMER_IDS" "$COGNITO_ISSUER" "$COGNITO_AUDIENCE" "$COGNITO_DEFAULT_TENANT_ID" "$COGNITO_DEFAULT_PURPOSE" "$CORS_ALLOWED_ORIGINS" "$RATE_LIMIT_REQUESTS_PER_MINUTE" <<'PY'
 import json
+import shlex
 import sys
 
 (
@@ -80,26 +81,36 @@ import sys
     cors_allowed_origins,
     rate_limit_requests_per_minute,
 ) = sys.argv[1:]
+
+
+def env_arg(name: str, value: str) -> str:
+    return f"--env {shlex.quote(f'{name}={value}')}"
+
+
+def quoted(value: str) -> str:
+    return shlex.quote(value)
+
+
 print(json.dumps({"commands": [
     "set -euo pipefail",
-    f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_host}",
-    f"docker pull {image_uri}",
+    f"aws ecr get-login-password --region {quoted(region)} | docker login --username AWS --password-stdin {quoted(registry_host)}",
+    f"docker pull {quoted(image_uri)}",
     "docker rm --force customer-intelligence || true",
     (
         "docker run --detach --name customer-intelligence --restart unless-stopped "
-        "--publish 80:8765 --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db "
-        f"--env AWS_REGION={region} --env LLM_PROVIDER={llm_provider} "
-        f"--env BEDROCK_MODEL_ID={bedrock_model_id} "
-        f"--env AUTH_MODE={auth_mode} --env AUTH_CUSTOMER_IDS={auth_customer_ids} "
-        f"--env COGNITO_ISSUER={cognito_issuer} --env COGNITO_AUDIENCE={cognito_audience} "
-        f"--env COGNITO_DEFAULT_TENANT_ID={cognito_default_tenant_id} "
-        f"--env COGNITO_DEFAULT_PURPOSE={cognito_default_purpose} "
-        f"--env CORS_ALLOWED_ORIGINS={cors_allowed_origins} "
-        f"--env RATE_LIMIT_REQUESTS_PER_MINUTE={rate_limit_requests_per_minute} "
+        f"--publish 80:8765 {env_arg('DATABASE_PATH', '/var/lib/customer-intelligence/platform.db')} "
+        f"{env_arg('AWS_REGION', region)} {env_arg('LLM_PROVIDER', llm_provider)} "
+        f"{env_arg('BEDROCK_MODEL_ID', bedrock_model_id)} "
+        f"{env_arg('AUTH_MODE', auth_mode)} {env_arg('AUTH_CUSTOMER_IDS', auth_customer_ids)} "
+        f"{env_arg('COGNITO_ISSUER', cognito_issuer)} {env_arg('COGNITO_AUDIENCE', cognito_audience)} "
+        f"{env_arg('COGNITO_DEFAULT_TENANT_ID', cognito_default_tenant_id)} "
+        f"{env_arg('COGNITO_DEFAULT_PURPOSE', cognito_default_purpose)} "
+        f"{env_arg('CORS_ALLOWED_ORIGINS', cors_allowed_origins)} "
+        f"{env_arg('RATE_LIMIT_REQUESTS_PER_MINUTE', rate_limit_requests_per_minute)} "
         "--volume /var/lib/customer-intelligence:/var/lib/customer-intelligence "
-        f"--log-driver awslogs --log-opt awslogs-region={region} "
-        f"--log-opt awslogs-group={log_group_name} "
-        f"--log-opt awslogs-stream=customer-intelligence {image_uri}"
+        f"--log-driver awslogs --log-opt {quoted(f'awslogs-region={region}')} "
+        f"--log-opt {quoted(f'awslogs-group={log_group_name}')} "
+        f"--log-opt awslogs-stream=customer-intelligence {quoted(image_uri)}"
     ),
 ]}))
 PY

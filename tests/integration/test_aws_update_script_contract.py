@@ -26,9 +26,10 @@ def test_update_script_verifies_the_digest_of_the_running_image() -> None:
     assert 'BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-us.amazon.nova-micro-v1:0}"' in script
     assert 'AUTH_MODE="${AUTH_MODE:-demo}"' in script
     assert "AUTH_MODE=cognito" in script
-    assert "--env COGNITO_ISSUER={cognito_issuer}" in script
-    assert "--env RATE_LIMIT_REQUESTS_PER_MINUTE={rate_limit_requests_per_minute}" in script
-    assert "--env AWS_REGION={region}" in script
+    assert "def env_arg(name: str, value: str) -> str" in script
+    assert "env_arg('COGNITO_ISSUER', cognito_issuer)" in script
+    assert "env_arg('RATE_LIMIT_REQUESTS_PER_MINUTE', rate_limit_requests_per_minute)" in script
+    assert "env_arg('AWS_REGION', region)" in script
     assert (
         "docker inspect --format '{{index .RepoDigests 0}}' customer-intelligence"
         not in script
@@ -85,6 +86,12 @@ def validate_parameters() -> None:
     payload = json.loads(option("--parameters"))
     assert isinstance(payload["commands"], list)
     assert payload["commands"]
+    if os.environ.get("FAKE_AWS_ASSERT_QUOTING") == "1":
+        rollouts = [command for command in payload["commands"] if command.startswith("docker run")]
+        if rollouts:
+            rollout = rollouts[0]
+            assert "'CORS_ALLOWED_ORIGINS=https://one.example, https://two.example'" in rollout
+            assert "'COGNITO_DEFAULT_PURPOSE=customer support'" in rollout
 
 
 service = args[0]
@@ -169,3 +176,38 @@ def test_update_script_reports_rollout_and_digest_outcomes(
         assert "SSM waiter reported a non-success terminal state" in result.stderr
     if mode == "digest_mismatch":
         assert "Running image digest mismatch" in result.stderr
+
+
+def test_update_script_quotes_forwarded_identity_settings() -> None:
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        fake_bin = Path(temporary_directory) / "aws"
+        fake_bin.write_text(FAKE_AWS)
+        fake_bin.chmod(fake_bin.stat().st_mode | stat.S_IXUSR)
+
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "AWS_REGION": "us-east-1",
+                "INSTANCE_ID": "i-test",
+                "REPOSITORY_URI": "registry.example/customer-intelligence",
+                "IMAGE_TAG": "test-tag",
+                "LOG_GROUP_NAME": "/demo/customer-intelligence",
+                "FAKE_AWS_MODE": "success",
+                "FAKE_AWS_ASSERT_QUOTING": "1",
+                "AUTH_MODE": "cognito",
+                "COGNITO_ISSUER": "https://issuer.example",
+                "COGNITO_AUDIENCE": "client-id",
+                "COGNITO_DEFAULT_PURPOSE": "customer support",
+                "CORS_ALLOWED_ORIGINS": "https://one.example, https://two.example",
+                "PATH": f"{temporary_directory}{os.pathsep}{environment['PATH']}",
+            }
+        )
+        result = subprocess.run(
+            ["bash", str(UPDATE_SCRIPT)],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=environment,
+        )
+
+    assert result.returncode == 0, result.stdout + result.stderr
