@@ -22,6 +22,9 @@ def test_update_script_verifies_the_digest_of_the_running_image() -> None:
     assert 'json.dumps({"commands": [' in script
     assert '--parameters "$commands_json"' in script
     assert '--parameters "$verify_parameters"' in script
+    assert 'LLM_PROVIDER="${LLM_PROVIDER:-fake}"' in script
+    assert 'BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-us.amazon.nova-micro-v1:0}"' in script
+    assert "--env AWS_REGION={region}" in script
     assert (
         "docker inspect --format '{{index .RepoDigests 0}}' customer-intelligence"
         not in script

@@ -70,6 +70,14 @@ and instance stop/start operations while the demo stack and Elastic IP exist.
 The host is managed through Systems Manager; no inbound SSH rule or SSH key is
 created.
 
+The demo host AMI is pinned in the CDK stack. This is intentional: the public
+Amazon Linux `latest` SSM parameter can advance between deployments and cause
+CloudFormation to replace the single host. The repository includes the pinned
+Phase One AMI for `us-east-1`; for another region, pass a region-specific AMI
+with `-c demo_ami_id=<regional-ami-id>` or `CCCP_DEMO_AMI_ID`. Change the AMI
+only as a separate, reviewed operation, with a data-preservation and rollback
+plan.
+
 The current deployed Phase One URL is
 [`http://98.95.194.236`](http://98.95.194.236). The Security Group allows HTTP
 only from the operator-provided CIDR and rejects an open `0.0.0.0/0` rule. Do
@@ -115,6 +123,42 @@ export REPOSITORY_URI="<RepositoryUri output>"
 The script reports the remote command status and stdout/stderr. Re-run the
 smoke check after every update; do not infer a successful image rollout from a
 successful `aws ssm send-command` request alone.
+
+## Bedrock canary
+
+Phase Two adds a bounded Bedrock explanation adapter. The application remains
+on the deterministic adapter unless `LLM_PROVIDER=bedrock` is explicitly set.
+The selected Bedrock default is the regional inference profile
+`us.amazon.nova-micro-v1:0`; the model identifier can be overridden for a
+controlled comparison. The EC2 role is scoped to the selected Nova Micro
+inference profile and its routed foundation-model ARNs.
+
+After deploying the stack update that adds the permission, build and push the
+candidate image, then roll it out as a canary:
+
+```bash
+export LLM_PROVIDER=bedrock
+export BEDROCK_MODEL_ID=us.amazon.nova-micro-v1:0
+export IMAGE_TAG="$(git rev-parse --short HEAD)"
+./infra/aws/update-demo.sh
+
+curl --fail "$DEMO_URL/api/health"
+```
+
+The health response must report `llm_provider: "bedrock"` and the expected
+model identifier. Run the three synthetic scenarios and inspect the resulting
+decision evidence before sharing the canary. If the model path is unavailable
+or the canary must be rolled back, run the same update with
+`LLM_PROVIDER=fake`; this returns the host to the deterministic reference path
+without changing the persisted SQLite history.
+
+The repository includes `scripts/bedrock_benchmark.py` for a repeatable
+comparison of at least three accessible profiles. It measures request success,
+deterministic explanation validation, a small business-language rubric, and
+wall-clock latency under bounded concurrency. Its output is evidence for a
+canary decision, not a production SLA or a large-scale load test. Keep all
+benchmark and canary inputs synthetic until authentication, TLS, retention,
+deletion, and audit controls are implemented.
 
 ## Teardown and cost control
 

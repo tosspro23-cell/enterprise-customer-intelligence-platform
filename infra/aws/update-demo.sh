@@ -8,6 +8,13 @@ set -euo pipefail
 : "${IMAGE_TAG:?Set IMAGE_TAG to the pushed ECR tag}"
 : "${LOG_GROUP_NAME:?Set LOG_GROUP_NAME from the CustomerIntelligenceDemo output}"
 
+LLM_PROVIDER="${LLM_PROVIDER:-fake}"
+BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-us.amazon.nova-micro-v1:0}"
+case "$LLM_PROVIDER" in
+  fake|bedrock) ;;
+  *) echo "LLM_PROVIDER must be fake or bedrock" >&2; exit 1 ;;
+esac
+
 registry_host="${REPOSITORY_URI%%/*}"
 repository_name="${REPOSITORY_URI#*/}"
 image_uri="${REPOSITORY_URI}:${IMAGE_TAG}"
@@ -24,11 +31,11 @@ if [[ -z "$expected_digest" || "$expected_digest" == "None" ]]; then
   exit 1
 fi
 
-commands_json="$(python3 - "$AWS_REGION" "$registry_host" "$image_uri" "$LOG_GROUP_NAME" <<'PY'
+commands_json="$(python3 - "$AWS_REGION" "$registry_host" "$image_uri" "$LOG_GROUP_NAME" "$LLM_PROVIDER" "$BEDROCK_MODEL_ID" <<'PY'
 import json
 import sys
 
-region, registry_host, image_uri, log_group_name = sys.argv[1:]
+region, registry_host, image_uri, log_group_name, llm_provider, bedrock_model_id = sys.argv[1:]
 print(json.dumps({"commands": [
     "set -euo pipefail",
     f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_host}",
@@ -37,6 +44,8 @@ print(json.dumps({"commands": [
     (
         "docker run --detach --name customer-intelligence --restart unless-stopped "
         "--publish 80:8765 --env DATABASE_PATH=/var/lib/customer-intelligence/platform.db "
+        f"--env AWS_REGION={region} --env LLM_PROVIDER={llm_provider} "
+        f"--env BEDROCK_MODEL_ID={bedrock_model_id} "
         "--volume /var/lib/customer-intelligence:/var/lib/customer-intelligence "
         f"--log-driver awslogs --log-opt awslogs-region={region} "
         f"--log-opt awslogs-group={log_group_name} "

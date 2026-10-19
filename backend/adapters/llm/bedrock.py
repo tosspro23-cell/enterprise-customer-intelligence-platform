@@ -8,6 +8,9 @@ from typing import Any
 from .base import ExplanationAdapter, ExplanationRequest, ExplanationResult, LLMUnavailable
 
 
+DEFAULT_BEDROCK_MODEL_ID = "us.amazon.nova-micro-v1:0"
+
+
 class BedrockExplanationAdapter(ExplanationAdapter):
     """Bounded explanation adapter using Amazon Bedrock Runtime Converse."""
 
@@ -19,7 +22,7 @@ class BedrockExplanationAdapter(ExplanationAdapter):
         region_name: str | None = None,
         max_tokens: int = 256,
     ) -> None:
-        self.model_id = model_id or os.getenv("BEDROCK_MODEL_ID", "")
+        self.model_id = model_id or os.getenv("BEDROCK_MODEL_ID", DEFAULT_BEDROCK_MODEL_ID)
         self.max_tokens = max_tokens
         if not self.model_id:
             raise LLMUnavailable("BEDROCK_MODEL_ID is not configured")

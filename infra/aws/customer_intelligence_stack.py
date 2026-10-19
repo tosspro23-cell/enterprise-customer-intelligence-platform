@@ -7,6 +7,7 @@ demo deployment foundation, not the production topology.
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from aws_cdk import (
@@ -20,6 +21,15 @@ from aws_cdk import (
     aws_logs as logs,
 )
 from constructs import Construct
+
+
+# Keep the Phase One AMI pinned so an unrelated stack update (for example, an
+# IAM-only canary change) does not replace the host when the public SSM
+# "latest" parameter advances. Add an explicit context value or
+# CCCP_DEMO_AMI_ID before deploying to another region.
+DEFAULT_DEMO_AMI_IDS = {
+    "us-east-1": "ami-0ed59cbb87dfa8dba",
+}
 
 
 class CustomerIntelligenceRepositoryStack(Stack):
@@ -57,9 +67,29 @@ class CustomerIntelligenceDemoStack(Stack):
         repository: ecr.Repository,
         allowed_cidr: Optional[str],
         image_tag: str,
+        deployment_region: str,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        ami_id = self.node.try_get_context("demo_ami_id") or os.getenv("CCCP_DEMO_AMI_ID")
+        if not ami_id:
+            ami_id = DEFAULT_DEMO_AMI_IDS.get(deployment_region)
+        if not ami_id:
+            raise ValueError(
+                f"No pinned demo AMI is configured for {deployment_region}; "
+                "set -c demo_ami_id=<regional-ami-id> or CCCP_DEMO_AMI_ID."
+            )
+        ami_id_parameter = CfnParameter(
+            self,
+            "AmiId",
+            type="AWS::EC2::Image::Id",
+            default=ami_id,
+            description=(
+                "Pinned Amazon Linux AMI for the demo host; update explicitly "
+                "when accepting an instance replacement."
+            ),
+        )
 
         image_tag_parameter = CfnParameter(
             self,
@@ -133,6 +163,20 @@ class CustomerIntelligenceDemoStack(Stack):
                 resources=[f"{log_group.log_group_arn}:*"],
             )
         )
+        # Phase 2 canary permission. The application still defaults to the
+        # deterministic adapter unless LLM_PROVIDER=bedrock is explicitly set.
+        # The inference profile routes to these three foundation-model ARNs.
+        role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["bedrock:InvokeModel"],
+                resources=[
+                    f"arn:aws:bedrock:{cdk_aws_region()}:{cdk_aws_account()}:inference-profile/us.amazon.nova-micro-v1:0",
+                    "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-micro-v1:0",
+                    "arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-micro-v1:0",
+                    "arn:aws:bedrock:us-east-2::foundation-model/amazon.nova-micro-v1:0",
+                ],
+            )
+        )
 
         registry_host = f"{cdk_aws_account()}.dkr.ecr.{cdk_aws_region()}.amazonaws.com"
         image_uri = f"{repository.repository_uri}:{image_tag_parameter.value_as_string}"
@@ -164,8 +208,8 @@ class CustomerIntelligenceDemoStack(Stack):
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
             instance_type=ec2.InstanceType("t3.micro"),
             credit_specification=ec2.CpuCredits.STANDARD,
-            machine_image=ec2.MachineImage.from_ssm_parameter(
-                "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+            machine_image=ec2.MachineImage.generic_linux(
+                {deployment_region: ami_id_parameter.value_as_string}
             ),
             security_group=security_group,
             role=role,
