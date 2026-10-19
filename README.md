@@ -69,3 +69,9 @@ The current Phase Two Bedrock canary evidence is documented in
 It compares three accessible profiles and uses Amazon Nova Micro as the
 preliminary Bedrock default; the application remains deterministic unless the
 deployment explicitly enables the Bedrock provider.
+
+Phase Two's next persistence increment adds an opt-in PostgreSQL adapter behind
+the same storage contract while keeping SQLite as the default local and AWS
+demo backend. It is documented in
+[docs/phase2-increment-03-postgres-persistence.md](docs/phase2-increment-03-postgres-persistence.md)
+and is not a claim that the live demo has been migrated.

@@ -10,6 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.api.schemas import StartCallRequest, TranscriptRequest
+from backend.adapters.persistence.postgres import PostgresStore
+from backend.adapters.persistence.sqlite import SQLiteStore
 from backend.domain.auth import AuthorizationError
 from backend.orchestration.realtime import ConflictError, NotFoundError, Platform, PlatformError
 from backend.security.authentication import (
@@ -23,15 +25,20 @@ from backend.security.rate_limit import InMemoryRateLimiter
 
 ROOT = Path(__file__).resolve().parent.parent
 DATABASE_PATH = os.getenv("DATABASE_PATH", str(ROOT / "data" / "platform.db"))
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 platform = Platform()
 platform.store.close()
-# Re-open with the configured path after construction so the app has durable local state.
-from backend.adapters.persistence.sqlite import SQLiteStore  # noqa: E402
 from backend.adapters.llm.azure_openai import AzureOpenAIExplanationAdapter  # noqa: E402
 from backend.adapters.llm.bedrock import BedrockExplanationAdapter  # noqa: E402
 from backend.adapters.llm.fake import DeterministicExplanationAdapter  # noqa: E402
 
-platform.store = SQLiteStore(DATABASE_PATH)
+if DATABASE_URL:
+    platform.store = PostgresStore(DATABASE_URL)
+    persistence_backend = "postgres"
+else:
+    # Re-open with the configured path after construction so the app has durable local state.
+    platform.store = SQLiteStore(DATABASE_PATH)
+    persistence_backend = "sqlite"
 platform.traces.store = platform.store
 llm_provider = os.getenv("LLM_PROVIDER", "fake").lower()
 if llm_provider in {"bedrock", "aws_bedrock"}:
@@ -190,6 +197,7 @@ async def health():
         "mode": "local-reference",
         "llm_provider": llm_provider,
         "llm_model_id": getattr(platform.llm, "model_id", None),
+        "persistence_backend": persistence_backend,
     }
 
 

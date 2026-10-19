@@ -3,11 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from backend.adapters.persistence.sqlite import SQLiteStore
+from backend.adapters.persistence.port import PersistenceStore
 
 
 class TraceRecorder:
-    def __init__(self, store: SQLiteStore, clock) -> None:
+    def __init__(self, store: PersistenceStore, clock) -> None:
         self.store = store
         self.clock = clock
 

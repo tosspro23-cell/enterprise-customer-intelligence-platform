@@ -210,8 +210,10 @@ not proof that a resource is cost-free.
 
 1. Choose and prove an HTTPS edge plus Cognito/OIDC token acquisition before
    enabling the opt-in identity mode or any non-synthetic data.
-2. Replace SQLite with a managed persistence adapter and add migration tests.
-3. Move the container to ECS/Fargate or App Runner once multi-instance
+2. Provision and accept a managed PostgreSQL database behind the checked-in
+   `DATABASE_URL` adapter before changing the live demo persistence backend.
+3. Define and test live-call state recovery and cross-process coordination.
+4. Move the container to ECS/Fargate or App Runner once multi-instance
    semantics and operational telemetry are ready.
-4. Add an approval-gated deployment workflow; this PR deliberately does not
+5. Add an approval-gated deployment workflow; this PR deliberately does not
    store AWS credentials or deploy automatically from GitHub Actions.

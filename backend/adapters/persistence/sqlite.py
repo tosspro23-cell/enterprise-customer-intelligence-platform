@@ -130,6 +130,9 @@ class SQLiteStore:
                     raise ValueError("post-call content hash conflict")
 
                 inserted = existing is None
+                canonical_interaction_id = (
+                    record.interaction_id if inserted else existing["interaction_id"]
+                )
                 if inserted:
                     self._connection.execute(
                         """INSERT INTO interactions
@@ -165,14 +168,34 @@ class SQLiteStore:
                           interaction_id=excluded.interaction_id,
                           transcript_version=excluded.transcript_version,
                           enrichment_version=excluded.enrichment_version""",
-                        (record.call_id, record.interaction_id, record.transcript_version, record.enrichment_version),
+                        (record.call_id, canonical_interaction_id, record.transcript_version, record.enrichment_version),
                     )
                 self._connection.commit()
-                return record, inserted
+                if inserted:
+                    return record, True
+                return self._record_from_row(existing), False
             except Exception:
                 if self._connection.in_transaction:
                     self._connection.rollback()
                 raise
+
+    @staticmethod
+    def _record_from_row(row: sqlite3.Row) -> InteractionRecord:
+        return InteractionRecord(
+            interaction_id=row["interaction_id"],
+            call_id=row["call_id"],
+            customer_id=row["customer_id"],
+            transcript_version=row["transcript_version"],
+            enrichment_version=row["enrichment_version"],
+            transcript_snapshot_id=row["transcript_snapshot_id"],
+            content_hash=row["content_hash"],
+            summary=row["summary"],
+            overall_sentiment=row["overall_sentiment"],
+            aspect_sentiment=json.loads(row["aspect_sentiment_json"]),
+            themes=tuple(json.loads(row["themes_json"])),
+            evidence_refs=tuple(json.loads(row["evidence_refs_json"])),
+            created_at=datetime.fromisoformat(row["created_at"]),
+        )
 
     def current_interaction(self, call_id: str) -> dict[str, Any] | None:
         with self._lock:
