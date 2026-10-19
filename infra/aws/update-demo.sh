@@ -25,7 +25,14 @@ esac
 case "$AUTH_MODE" in
   demo) ;;
   cognito)
-    if [[ -z "$COGNITO_ISSUER" || -z "$COGNITO_AUDIENCE" || -z "$CORS_ALLOWED_ORIGINS" || "$CORS_ALLOWED_ORIGINS" == "*" ]]; then
+    IFS=',' read -r -a cors_origins <<< "$CORS_ALLOWED_ORIGINS"
+    wildcard_cors=false
+    for origin in "${cors_origins[@]}"; do
+      if [[ "$origin" == "*" ]]; then
+        wildcard_cors=true
+      fi
+    done
+    if [[ -z "$COGNITO_ISSUER" || -z "$COGNITO_AUDIENCE" || -z "$CORS_ALLOWED_ORIGINS" || "$wildcard_cors" == true ]]; then
       echo "COGNITO_ISSUER, COGNITO_AUDIENCE, and a concrete CORS_ALLOWED_ORIGINS value are required for AUTH_MODE=cognito" >&2
       exit 1
     fi

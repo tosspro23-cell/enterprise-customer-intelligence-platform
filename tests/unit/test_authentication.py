@@ -5,6 +5,7 @@ from backend.security.authentication import (
     AuthenticationError,
     CognitoJWTAuthenticator,
     principal_from_claims,
+    validate_cognito_audience,
 )
 
 
@@ -48,3 +49,22 @@ def test_authenticator_hides_decoder_failures() -> None:
     with pytest.raises(AuthenticationError, match="invalid bearer token") as error:
         authenticator.authenticate("opaque-token")
     assert "private key-set detail" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "claims",
+    [
+        {"token_use": "access", "client_id": "client-id"},
+        {"token_use": "id", "aud": "client-id"},
+    ],
+)
+def test_cognito_token_use_uses_the_matching_audience_field(claims) -> None:
+    assert validate_cognito_audience(claims, "client-id") == claims
+
+
+def test_cognito_token_rejects_audience_mismatch() -> None:
+    with pytest.raises(AuthenticationError, match="audience"):
+        validate_cognito_audience(
+            {"token_use": "access", "client_id": "other-client"},
+            "client-id",
+        )

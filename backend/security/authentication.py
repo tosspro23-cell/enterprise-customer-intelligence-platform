@@ -50,6 +50,19 @@ def _claim_customer_ids(claims: Mapping[str, Any]) -> frozenset[str] | None:
     return customer_ids
 
 
+def validate_cognito_audience(
+    claims: Mapping[str, Any], audience: str
+) -> Mapping[str, Any]:
+    """Accept the correct audience field for Cognito access or ID tokens."""
+
+    token_use = claims.get("token_use")
+    if token_use == "access" and claims.get("client_id") == audience:
+        return claims
+    if token_use == "id" and claims.get("aud") == audience:
+        return claims
+    raise AuthenticationError("token audience does not match client")
+
+
 def principal_from_claims(
     claims: Mapping[str, Any],
     *,
@@ -144,15 +157,18 @@ class CognitoJWTAuthenticator:
 
         def decode(token: str) -> Mapping[str, Any]:
             signing_key = jwks_client.get_signing_key_from_jwt(token)
-            return jwt.decode(
+            claims = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
-                audience=self.audience,
                 issuer=self.issuer,
                 leeway=leeway_seconds,
-                options={"require": ["exp", "iat", "sub"]},
+                options={
+                    "require": ["exp", "iat", "sub", "token_use"],
+                    "verify_aud": False,
+                },
             )
+            return validate_cognito_audience(claims, self.audience)
 
         return decode
 

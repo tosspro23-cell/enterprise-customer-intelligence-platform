@@ -23,8 +23,8 @@ synthetic-only and is not an enterprise identity mechanism.
 
 - `Authorization: Bearer <JWT>` on every protected API request;
 - `COGNITO_ISSUER` and `COGNITO_AUDIENCE` configuration;
-- signature validation against the issuer JWKS, with issuer, audience, expiry,
-  and required subject/issued-at claims checked;
+- signature validation against the issuer JWKS, with issuer, token use,
+  audience/client ID, expiry, and required subject/issued-at claims checked;
 - an `agent` or `supervisor` group claim;
 - an explicit customer scope claim (`custom:customer_ids`) when the identity
   provider has one. `AUTH_CUSTOMER_IDS` is only a synthetic fallback and is not

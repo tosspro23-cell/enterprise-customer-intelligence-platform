@@ -84,6 +84,8 @@ if auth_mode == "cognito":
 def _cors_origins() -> list[str]:
     configured = [item.strip() for item in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if item.strip()]
     if configured:
+        if "*" in configured and auth_mode == "cognito":
+            raise RuntimeError("wildcard CORS is not allowed when AUTH_MODE=cognito")
         return configured
     if auth_mode == "cognito":
         raise RuntimeError("CORS_ALLOWED_ORIGINS is required when AUTH_MODE=cognito")
